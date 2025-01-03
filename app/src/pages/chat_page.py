@@ -201,7 +201,7 @@ class ChatPage:
                 selected_kbs=st.session_state.selected_kbs,
                 selected_docs=st.session_state.selected_docs
             )
-            
+            print('relevant_segments', relevant_segments)
             # Préparation du contexte avec indication des sources
             context_parts = []
             sorted_segments = sorted(relevant_segments, key=lambda x: x.relevance_score, reverse=True)

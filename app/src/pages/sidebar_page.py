@@ -54,6 +54,7 @@ class KnowledgeBasePage:
     
     def handle_document_upload(self, files: List[tempfile.NamedTemporaryFile]):
         """Gère l'upload de documents."""
+        success = True
         for uploaded_file in files:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
                 tmp_file.write(uploaded_file.getvalue())
@@ -68,11 +69,22 @@ class KnowledgeBasePage:
                             "document_title": uploaded_file.name.replace('.pdf', '')
                         }
                     )
-                    st.success(f"Document {uploaded_file.name} ajouté!")
+                    st.success(f"Document {uploaded_file.name} ajouté avec succès!")
                 except Exception as e:
-                    st.error(f"Erreur: {str(e)}")
+                    success = False
+                    st.error(f"Erreur lors de l'ajout du document {uploaded_file.name}: {str(e)}")
                 finally:
-                    os.unlink(tmp_path)
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception as e:
+                        self.logger.warning(f"Erreur lors de la suppression du fichier temporaire: {str(e)}")
+        
+        if success:
+            # Vider le cache du composant d'upload
+            st.session_state[f"upload_{st.session_state.current_kb.kb_id}"] = None
+            # Forcer le rechargement des bases
+            if 'knowledge_bases' in st.session_state:
+                st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
     
     def handle_expander_change(self, kb_id: str, is_expanded: bool):
         """Gère le changement d'état d'un expander."""
