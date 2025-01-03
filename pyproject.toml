@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "a0580-v5"
+version = "0.1.0"
+description = ""
+authors = ["Anthony <a.sauvage@socofer.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+dsrag = "^0.4.6"
+streamlit = "^1.41.1"
+openai = "^1.58.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

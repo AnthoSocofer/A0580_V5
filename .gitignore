@@ -1,0 +1,5 @@
+/.env
+/.venv
+app/src/modules
+/agency_swarm
+app/data

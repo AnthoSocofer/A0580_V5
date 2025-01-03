@@ -1,0 +1,26 @@
+version: "1.0.0"
+environment: "development"
+
+knowledge_base:
+  storage_directory: "~/repo/git/A0580_V5/app/data/knowledge_bases/chromadb"
+  default_language: "fr"
+  max_results_per_search: 5
+  chunk_size: 1000
+  min_length_for_chunking: 100
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+embedding:
+  provider: "openai"
+  model: "text-embedding-3-small"
+
+reranker:
+  provider: "cohere"
+  model: "rerank-multilingual-v3.0"
+
+search:
+  max_results: 5
+  min_score: 0.5
+  rerank_top_k: 10

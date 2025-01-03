@@ -1,0 +1,23 @@
+# Interface utilisateur
+streamlit>=1.29.0
+
+# Base de données vectorielle
+chromadb>=0.4.18
+
+# Traitement des documents
+langchain>=0.0.350
+pypdf>=3.17.1
+python-docx>=1.0.1
+
+# Modèles d'IA
+openai>=1.6.1
+cohere-api>=4.37
+
+# Configuration et utilitaires
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+dataclasses-json>=0.6.3
+
+# Tests
+pytest>=7.4.3
+pytest-cov>=4.1.0
