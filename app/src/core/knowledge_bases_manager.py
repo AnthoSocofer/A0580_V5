@@ -35,26 +35,36 @@ class KnowledgeBasesManager:
         
         # Cache des bases de connaissances
         self._knowledge_bases: Dict[str, KnowledgeBase] = {}
+        self._loading = False  # Flag pour éviter les chargements récursifs
         self._load_existing_bases()
     
     def _load_existing_bases(self) -> None:
         """Charge les bases de connaissances existantes depuis le stockage."""
-        if self._knowledge_bases:  # Évite les rechargements inutiles
+        if self._loading:  # Évite les chargements récursifs
             return
             
-        for filename in os.listdir(self.metadata_dir):
-            if filename.endswith('.json'):
-                kb_id = filename[:-5]
-                try:
-                    kb = KnowledgeBase(
-                        kb_id=kb_id,
-                        storage_directory=self.storage_directory,
-                        exists_ok=True
-                    )
-                    self._knowledge_bases[kb_id] = kb
-                    self.logger.info(f"Base de connaissances chargée: {kb_id}")
-                except Exception as e:
-                    self.logger.warning(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
+        try:
+            self._loading = True
+            if not os.path.exists(self.metadata_dir):
+                self.logger.warning(f"Le répertoire de métadonnées n'existe pas: {self.metadata_dir}")
+                return
+                
+            for filename in os.listdir(self.metadata_dir):
+                if filename.endswith('.json'):
+                    kb_id = filename[:-5]
+                    if kb_id not in self._knowledge_bases:  # Évite les rechargements inutiles
+                        try:
+                            kb = KnowledgeBase(
+                                kb_id=kb_id,
+                                storage_directory=self.storage_directory,
+                                exists_ok=True
+                            )
+                            self._knowledge_bases[kb_id] = kb
+                            self.logger.info(f"Base de connaissances chargée: {kb_id}")
+                        except Exception as e:
+                            self.logger.warning(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
+        finally:
+            self._loading = False
 
     def _get_document_count(self, kb: KnowledgeBase) -> int:
         """Retourne le nombre de documents dans une base."""
@@ -66,10 +76,34 @@ class KnowledgeBasesManager:
             self.logger.warning(f"Erreur lors du comptage des documents: {str(e)}")
             return 0
 
+    def get_knowledge_base(self, kb_id: str) -> Optional[KnowledgeBase]:
+        """Récupère une base de connaissances par son ID."""
+        if kb_id in self._knowledge_bases:
+            return self._knowledge_bases[kb_id]
+            
+        metadata_file = os.path.join(self.metadata_dir, f"{kb_id}.json")
+        if not os.path.exists(metadata_file):
+            self.logger.warning(f"La base {kb_id} n'existe pas")
+            return None
+            
+        try:
+            kb = KnowledgeBase(
+                kb_id=kb_id,
+                storage_directory=self.storage_directory,
+                exists_ok=True
+            )
+            self._knowledge_bases[kb_id] = kb
+            return kb
+        except Exception as e:
+            self.logger.error(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
+            return None
+
     def list_knowledge_bases(self) -> List[Dict[str, Any]]:
         """Liste toutes les bases de connaissances disponibles."""
+        if not self._knowledge_bases:
+            self._load_existing_bases()
+            
         kb_list = []
-        
         for filename in os.listdir(self.metadata_dir):
             if filename.endswith('.json'):
                 kb_id = filename[:-5]
@@ -87,48 +121,12 @@ class KnowledgeBasesManager:
                     self.logger.warning(f"Erreur lors de la lecture des métadonnées de {kb_id}: {str(e)}")
                     kb_list.append({
                         'kb_id': kb_id,
-                        'title': 'Erreur de chargement',
+                        'title': kb_id,
                         'description': str(e),
                         'language': config.knowledge_base.default_language,
                         'document_count': 0
                     })
         return kb_list
-
-    def get_knowledge_base(self, kb_id: str) -> Optional[KnowledgeBase]:
-        """Récupère une base de connaissances par son ID."""
-        if kb_id not in self._knowledge_bases:
-            try:
-                kb = KnowledgeBase(
-                    kb_id=kb_id,
-                    storage_directory=self.storage_directory,
-                    exists_ok=True
-                )
-                self._knowledge_bases[kb_id] = kb
-            except Exception as e:
-                self.logger.error(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
-                return None
-        return self._knowledge_bases.get(kb_id)
-
-    def _create_embedding_model(
-        self,
-        provider: str = "openai",
-        model_name: str = "text-embedding-3-small",
-        dimension: Optional[int] = None
-    ) -> OpenAIEmbedding:
-        """Crée une instance du modèle d'embedding selon la configuration"""
-        if provider == "openai":
-            return OpenAIEmbedding(model=model_name, dimension=dimension)
-        raise ValueError(f"Provider d'embedding non supporté: {provider}")
-
-    def _create_reranker(
-        self,
-        provider: str = "cohere",
-        model_name: str = "rerank-multilingual-v3.0"
-    ) -> CohereReranker:
-        """Crée une instance du modèle de reranking selon la configuration"""
-        if provider == "cohere":
-            return CohereReranker(model=model_name)
-        raise ValueError(f"Provider de reranking non supporté: {provider}")
 
     def create_knowledge_base(
         self,
@@ -159,6 +157,12 @@ class KnowledgeBasesManager:
             exists_ok: Si True, écrase la base si elle existe déjà
         """
         try:
+            self.logger.info(f"Création de la base {kb_id} dans {self.storage_directory}")
+            
+            # Vérifier que les répertoires existent
+            os.makedirs(self.storage_directory, exist_ok=True)
+            os.makedirs(self.metadata_dir, exist_ok=True)
+            
             # Vérifier si la base existe déjà
             if kb_id in self._knowledge_bases:
                 if not exists_ok:
@@ -190,15 +194,47 @@ class KnowledgeBasesManager:
                 **kwargs
             )
             
+            # Vérifier que les fichiers ont été créés
+            metadata_file = os.path.join(self.metadata_dir, f"{kb_id}.json")
+            if not os.path.exists(metadata_file):
+                self.logger.error(f"Le fichier de métadonnées n'a pas été créé pour {kb_id}")
+                raise RuntimeError("Échec de la création des fichiers de la base")
+            
             # Mettre à jour le cache
             self._knowledge_bases[kb_id] = kb
             
-            self.logger.info(f"Base de connaissances créée: {kb_id}")
+            self.logger.info(f"Base de connaissances créée avec succès: {kb_id}")
             return kb
             
         except Exception as e:
             self.logger.error(f"Erreur lors de la création de la base {kb_id}: {str(e)}")
+            # Log plus détaillé de l'état du système
+            try:
+                self.logger.debug(f"État du répertoire: {os.listdir(self.storage_directory)}")
+            except Exception as dir_error:
+                self.logger.error(f"Impossible de lister le répertoire: {str(dir_error)}")
             raise
+
+    def _create_embedding_model(
+        self,
+        provider: str = "openai",
+        model_name: str = "text-embedding-3-small",
+        dimension: Optional[int] = None
+    ) -> OpenAIEmbedding:
+        """Crée une instance du modèle d'embedding selon la configuration"""
+        if provider == "openai":
+            return OpenAIEmbedding(model=model_name, dimension=dimension)
+        raise ValueError(f"Provider d'embedding non supporté: {provider}")
+
+    def _create_reranker(
+        self,
+        provider: str = "cohere",
+        model_name: str = "rerank-multilingual-v3.0"
+    ) -> CohereReranker:
+        """Crée une instance du modèle de reranking selon la configuration"""
+        if provider == "cohere":
+            return CohereReranker(model=model_name)
+        raise ValueError(f"Provider de reranking non supporté: {provider}")
 
     def delete_knowledge_base(self, kb_id: str) -> bool:
         """Supprime une base de connaissances."""
@@ -257,3 +293,27 @@ class KnowledgeBasesManager:
             self.logger.error(f"Erreur lors de la liste des documents: {str(e)}")
             
         return documents
+
+    def delete_document(self, kb_id: str, doc_id: str) -> bool:
+        """Supprime un document d'une base de connaissances.
+        
+        Args:
+            kb_id: ID de la base de connaissances
+            doc_id: ID du document à supprimer
+            
+        Returns:
+            bool: True si le document a été supprimé avec succès
+        """
+        try:
+            kb = self.get_knowledge_base(kb_id)
+            if not kb:
+                raise ValueError(f"Base de connaissances {kb_id} introuvable")
+            
+            # Supprimer le document de la base
+            kb.delete_document(doc_id)
+            self.logger.info(f"Document {doc_id} supprimé de la base {kb_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la suppression du document {doc_id} de la base {kb_id}: {str(e)}")
+            raise

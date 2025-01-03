@@ -19,6 +19,8 @@ class KnowledgeBasePage:
             st.session_state.current_kb = None
         if 'active_expander' not in st.session_state:
             st.session_state.active_expander = None
+        if 'current_kb_id' not in st.session_state:
+            st.session_state.current_kb_id = None
 
     def handle_kb_creation(self, kb_id: str, title: str, description: str):
         """Gère la création d'une base de connaissances."""
@@ -30,15 +32,22 @@ class KnowledgeBasePage:
                 exists_ok=True
             )
             st.session_state.current_kb = kb
+            st.session_state.current_kb_id = kb_id
             st.success(f"Base '{title}' créée avec succès!")
         except Exception as e:
             st.error(f"Erreur lors de la création: {str(e)}")
     
     def handle_kb_selection(self, kb_id: str):
         """Gère la sélection d'une base de connaissances."""
+        if kb_id == st.session_state.get('current_kb_id'):  # Évite les rechargements inutiles
+            return
+            
         try:
-            st.session_state.current_kb = self.kb_manager.get_knowledge_base(kb_id)
-            if not st.session_state.current_kb:
+            kb = self.kb_manager.get_knowledge_base(kb_id)
+            if kb:
+                st.session_state.current_kb = kb
+                st.session_state.current_kb_id = kb_id
+            else:
                 st.error(f"Erreur lors du chargement de la base {kb_id}")
         except Exception as e:
             st.error(f"Erreur lors du chargement: {str(e)}")
@@ -74,7 +83,19 @@ class KnowledgeBasePage:
         elif st.session_state.active_expander == kb_id:
             st.session_state.active_expander = None
             st.session_state.current_kb = None
+            st.session_state.current_kb_id = None
     
+    def handle_document_delete(self, kb_id: str, doc_id: str):
+        """Gère la suppression d'un document."""
+        try:
+            self.kb_manager.delete_document(kb_id, doc_id)
+            st.success(f"Document {doc_id} supprimé")
+            # Forcer le rechargement des documents
+            if 'knowledge_bases' in st.session_state:
+                st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+        except Exception as e:
+            st.error(f"Erreur lors de la suppression: {str(e)}")
+
     def render(self):
         """Affiche la page de gestion des bases de connaissances."""
         st.title("Gestion des Bases de Connaissances")
@@ -85,17 +106,19 @@ class KnowledgeBasePage:
         
         # Bases disponibles
         st.markdown("### Bases disponibles")
-        if hasattr(st.session_state, 'knowledge_bases'):
-            kb_list = st.session_state.knowledge_bases
-        else:
-            kb_list = self.kb_manager.list_knowledge_bases()
-            st.session_state.knowledge_bases = kb_list
+        
+        # Utiliser la liste des bases stockée dans la session
+        if 'knowledge_bases' not in st.session_state:
+            st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
 
-        for kb in kb_list:
+        for kb in st.session_state.knowledge_bases:
             kb_id = kb['kb_id']
             is_active = kb_id == st.session_state.active_expander
             
-            expander = st.expander(kb.get('title', kb_id), expanded=is_active)
+            # Utiliser un ID unique pour le titre de l'expander
+            unique_title = f"{kb.get('title', kb_id)} ({kb_id})"
+            expander = st.expander(unique_title, expanded=is_active)
+            
             with expander:
                 st.markdown(f"**ID**: {kb_id}")
                 if kb.get('description'):
@@ -105,7 +128,7 @@ class KnowledgeBasePage:
                 # Si l'expander change d'état
                 if expander.expanded != is_active:
                     self.handle_expander_change(kb_id, expander.expanded)
-                    st.rerun()
+                    # st.rerun()  # Supprimé pour éviter les rechargements inutiles
 
                 # Afficher les fonctionnalités si l'expander est actif
                 if expander.expanded:
@@ -129,15 +152,19 @@ class KnowledgeBasePage:
                     try:
                         documents = self.kb_manager.list_documents(kb_id)
                         if documents:
-                            with st.container():
-                                doc_list = "\n".join([f"• {doc.get('title', doc['doc_id'])}" for doc in documents])
-                                st.markdown(f"""
-                                    <div style="max-height: 200px; overflow-y: auto;">
-                                    {doc_list}
-                                    </div>
-                                    """, unsafe_allow_html=True)
+                            # Créer des colonnes pour chaque ligne de document
+                            for doc in documents:
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    doc_title = doc.get('title', doc['doc_id'])
+                                    if isinstance(doc_title, dict) and 'title' in doc_title:
+                                        doc_title = doc_title['title']
+                                    st.text(doc_title)
+                                with col2:
+                                    if st.button("🗑️", key=f"delete_{kb_id}_{doc['doc_id']}"):
+                                        self.handle_document_delete(kb_id, doc['doc_id'])
                         else:
-                            st.info("Aucun document dans cette base")
+                            st.info("Aucun document")
                     except Exception as e:
                         st.error(f"Erreur lors de la liste des documents: {str(e)}")
                     
@@ -149,4 +176,5 @@ class KnowledgeBasePage:
                             st.success(f"Base {kb_id} supprimée")
                             st.session_state.active_expander = None
                             st.session_state.current_kb = None
-                            st.rerun()
+                            st.session_state.current_kb_id = None
+                            # st.rerun()  # Supprimé pour éviter les rechargements inutiles

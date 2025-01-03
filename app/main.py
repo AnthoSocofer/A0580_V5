@@ -60,15 +60,16 @@ class App:
                 "Filtres"
             ])
             
-            # Chargement des bases une seule fois
-            knowledge_bases = self.kb_manager.list_knowledge_bases()
+            # Chargement des bases une seule fois par session
+            if 'knowledge_bases' not in st.session_state:
+                st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
             
             # Affichage du contenu des onglets
             with tab_gestion:
                 self.kb_page.render()
             
             with tab_chat:
-                self.chat_page.render_filters(knowledge_bases, key_prefix="sidebar_")
+                self.chat_page.render_filters(st.session_state.knowledge_bases, key_prefix="sidebar_")
             
             # Mise à jour de l'onglet actif
             if tab_gestion.id not in st.session_state or tab_chat.id not in st.session_state:

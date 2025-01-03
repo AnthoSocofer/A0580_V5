@@ -46,44 +46,77 @@ class ChatPage:
         """
         # Filtre des bases de connaissances
         st.markdown("### Bases de connaissances")
-        kb_options = {}
-        for kb in knowledge_bases:
-            title = kb.get('title', kb['kb_id'])
-            kb_options[title] = kb['kb_id']
-            
+        
+        # Initialiser les options une seule fois
+        if 'kb_options' not in st.session_state:
+            st.session_state.kb_options = {
+                kb.get('title', kb['kb_id']): kb['kb_id']
+                for kb in knowledge_bases
+            }
+        
+        # Initialiser la sélection par défaut une seule fois
+        if not st.session_state.kb_filter_initialized:
+            st.session_state.selected_kb_titles = list(st.session_state.kb_options.keys())
+            st.session_state.selected_kbs = list(st.session_state.kb_options.values())
+            st.session_state.kb_filter_initialized = True
+        
+        # Sélection des bases
         selected_kb_titles = st.multiselect(
             "Sélectionnez les bases de connaissances à interroger",
-            options=list(kb_options.keys()),
-            default=list(kb_options.keys()) if not st.session_state.kb_filter_initialized else None,
-            key=f"{key_prefix}filter_kb_select"
+            options=list(st.session_state.kb_options.keys()),
+            default=st.session_state.selected_kb_titles,
+            key=f"{key_prefix}_kb_multiselect"
         )
-        st.session_state.selected_kbs = [kb_options[title] for title in selected_kb_titles]
-        st.session_state.kb_filter_initialized = True
+        
+        # Mettre à jour la sélection seulement si elle a changé
+        if selected_kb_titles != st.session_state.selected_kb_titles:
+            st.session_state.selected_kb_titles = selected_kb_titles
+            st.session_state.selected_kbs = [st.session_state.kb_options[title] for title in selected_kb_titles]
+            st.session_state.selected_docs = []  # Réinitialiser la sélection des documents
+            if 'cached_documents' in st.session_state:
+                del st.session_state.cached_documents  # Forcer le rechargement des documents
         
         # Filtre des documents
         if st.session_state.selected_kbs:
             st.markdown("### Documents")
+            
+            # Initialiser ou mettre à jour le cache des documents
+            if 'cached_documents' not in st.session_state:
+                st.session_state.cached_documents = {}
+                for kb_id in st.session_state.selected_kbs:
+                    if kb_id not in st.session_state.cached_documents:
+                        docs = self.kb_manager.list_documents(kb_id)
+                        st.session_state.cached_documents[kb_id] = docs
+            
+            # Construire la liste des documents disponibles
             all_docs = []
             for kb_id in st.session_state.selected_kbs:
-                docs = self.kb_manager.list_documents(kb_id)
+                docs = st.session_state.cached_documents.get(kb_id, [])
                 for doc in docs:
                     doc_title = doc.get('title', doc['doc_id'])
                     if isinstance(doc_title, dict) and 'title' in doc_title:
                         doc_title = doc_title['title']
                     doc.update({
                         'kb_id': kb_id,
-                        'title': doc_title
+                        'title': f"{doc_title} ({kb_id})"  # Ajouter l'ID de la base pour l'unicité
                     })
                     all_docs.append(doc)
             
+            # Créer les options de documents
             doc_options = {doc['title']: doc['doc_id'] for doc in all_docs}
+            
+            # Sélection des documents
             selected_doc_titles = st.multiselect(
                 "Sélectionner les documents",
                 options=list(doc_options.keys()),
                 default=[title for title, doc_id in doc_options.items() if doc_id in st.session_state.selected_docs],
-                key=f"{key_prefix}filter_doc_select"
+                key=f"{key_prefix}_doc_multiselect"
             )
-            st.session_state.selected_docs = [doc_options[title] for title in selected_doc_titles]
+            
+            # Mettre à jour la sélection des documents seulement si elle a changé
+            new_selected_docs = [doc_options[title] for title in selected_doc_titles]
+            if new_selected_docs != st.session_state.selected_docs:
+                st.session_state.selected_docs = new_selected_docs
     
     def render_sources(self, segments, expanded=False):
         """Affiche les sources dans un expander"""
