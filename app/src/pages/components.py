@@ -108,3 +108,127 @@ def document_list(documents: List[Dict[str, Any]]):
             with col2:
                 st.caption(f"Pages: {doc.get('page_count', '?')}")
         st.divider()
+
+def knowledge_base_expander(
+    kb: Dict[str, Any],
+    is_active: bool,
+    on_expander_change: Callable[[str, bool], None],
+    on_document_upload: Callable[[List[tempfile.NamedTemporaryFile]], None],
+    on_document_delete: Callable[[str, str], None],
+    on_kb_delete: Callable[[str], None],
+    kb_manager: Any
+):
+    """Affiche un expander pour une base de connaissances.
+    
+    Args:
+        kb: Dictionnaire contenant les informations de la base
+        is_active: Si l'expander est actuellement actif
+        on_expander_change: Callback appelé lors du changement d'état de l'expander
+        on_document_upload: Callback appelé lors de l'upload de documents
+        on_document_delete: Callback appelé lors de la suppression d'un document
+        on_kb_delete: Callback appelé lors de la suppression de la base
+        kb_manager: Instance du gestionnaire de bases de connaissances
+    """
+    kb_id = kb['kb_id']
+    unique_title = f"{kb.get('title', kb_id)} ({kb_id})"
+    expander = st.expander(unique_title, expanded=is_active)
+    
+    with expander:
+        st.markdown(f"**ID**: {kb_id}")
+        if kb.get('description'):
+            st.markdown(f"**Description**: {kb['description']}")
+        
+        # Si l'expander change d'état
+        if expander.expanded != is_active:
+            on_expander_change(kb_id, expander.expanded)
+        
+        # Afficher les fonctionnalités si l'expander est actif
+        if expander.expanded:
+            st.markdown("---")
+            
+            # Upload de documents
+            st.markdown("#### Ajouter des documents")
+            
+            # Clé unique pour le widget d'upload
+            upload_key = f"upload_{kb_id}"
+            processed_key = f"processed_{upload_key}"
+            
+            if processed_key not in st.session_state:
+                st.session_state[processed_key] = set()
+            
+            uploaded_files = st.file_uploader(
+                "Sélectionner des fichiers PDF",
+                type=['pdf'],
+                accept_multiple_files=True,
+                key=upload_key
+            )
+            
+            if uploaded_files:
+                # Identifier les fichiers non traités
+                new_files = [
+                    f for f in uploaded_files 
+                    if f.name not in st.session_state[processed_key]
+                ]
+                
+                if new_files:
+                    on_document_upload(new_files)
+            
+            # Liste des documents
+            st.markdown("#### Documents disponibles")
+            try:
+                documents = kb_manager.list_documents(kb_id)
+                if documents:
+                    # Créer des colonnes pour chaque ligne de document
+                    for doc in documents:
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            doc_title = doc.get('title', doc['doc_id'])
+                            if isinstance(doc_title, dict) and 'title' in doc_title:
+                                doc_title = doc_title['title']
+                            st.text(doc_title)
+                        with col2:
+                            if st.button("🗑️", key=f"delete_{kb_id}_{doc['doc_id']}"):
+                                on_document_delete(kb_id, doc['doc_id'])
+                else:
+                    st.info("Aucun document")
+            except Exception as e:
+                st.error(f"Erreur lors de la liste des documents: {str(e)}")
+            
+            st.markdown("---")
+            
+            # Bouton de suppression de la base
+            if st.button("Supprimer la base", key=f"delete_kb_{kb_id}"):
+                on_kb_delete(kb_id)
+
+def knowledge_bases_list(
+    kb_manager: Any,
+    active_expander: Optional[str],
+    on_expander_change: Callable[[str, bool], None],
+    on_document_upload: Callable[[List[tempfile.NamedTemporaryFile]], None],
+    on_document_delete: Callable[[str, str], None],
+    on_kb_delete: Callable[[str], None]
+):
+    """Affiche la liste des bases de connaissances.
+    
+    Args:
+        kb_manager: Instance du gestionnaire de bases de connaissances
+        active_expander: ID de l'expander actuellement actif
+        on_expander_change: Callback appelé lors du changement d'état d'un expander
+        on_document_upload: Callback appelé lors de l'upload de documents
+        on_document_delete: Callback appelé lors de la suppression d'un document
+        on_kb_delete: Callback appelé lors de la suppression de la base
+    """
+    # Utiliser la liste des bases stockée dans la session
+    if 'knowledge_bases' not in st.session_state:
+        st.session_state.knowledge_bases = kb_manager.list_knowledge_bases()
+    
+    for kb in st.session_state.knowledge_bases:
+        knowledge_base_expander(
+            kb=kb,
+            is_active=kb['kb_id'] == active_expander,
+            on_expander_change=on_expander_change,
+            on_document_upload=on_document_upload,
+            on_document_delete=on_document_delete,
+            on_kb_delete=on_kb_delete,
+            kb_manager=kb_manager
+        )
