@@ -154,7 +154,6 @@ class KnowledgeBasePage:
     def render(self):
         """Affiche la page de gestion des bases de connaissances."""
         
-        st.title("Gestion des Bases de Connaissances")
         
         # Création d'une nouvelle base
         with st.expander("Créer une nouvelle base", expanded=False):

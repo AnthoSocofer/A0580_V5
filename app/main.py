@@ -52,12 +52,12 @@ class App:
     def _render_sidebar(self):
         """Affiche la barre latérale."""
         with st.sidebar:
-            st.title("📚 Assistant Documentaire")
             
             # Sélecteur de modèle LLM
+            st.title("Sélection du modèle")
             self.chat_page.llm_selector.render()
-            
             # Onglets de navigation
+            st.title("Gestion des Bases de Connaissances")
             tab_gestion, tab_chat = st.tabs([
                 "Gestion Documentaire",
                 "Filtres"
