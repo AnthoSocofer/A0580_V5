@@ -9,6 +9,7 @@ from typing import List
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from dsrag.knowledge_base import KnowledgeBase
 from src.pages import components
+from src.pages.llm_selector import LLMSelector
 
 class KnowledgeBasePage:
     """Page de gestion des bases de connaissances."""
@@ -17,6 +18,7 @@ class KnowledgeBasePage:
         """Initialise la page avec le gestionnaire de bases."""
         self.kb_manager = kb_manager
         self.logger = logging.getLogger(__name__)
+        self.llm_selector = LLMSelector()
         if 'current_kb' not in st.session_state:
             st.session_state.current_kb = None
         if 'active_expander' not in st.session_state:

@@ -7,6 +7,7 @@ from dsrag.knowledge_base import KnowledgeBase
 from dsrag.llm import OpenAIChatAPI
 from src.core.search_engine import SearchEngine, DocumentReference
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
+from src.pages.llm_selector import LLMSelector
 
 class ChatPage:
     def __init__(self, kb_manager: KnowledgeBasesManager):
@@ -17,6 +18,7 @@ class ChatPage:
         """
         self.kb_manager = kb_manager
         self.search_engine = SearchEngine()
+        self.llm_selector = LLMSelector()
         
         if 'messages' not in st.session_state:
             st.session_state.messages = []
@@ -227,7 +229,7 @@ class ChatPage:
             ]
             
             # Appel à l'API OpenAI
-            llm = OpenAIChatAPI()
+            llm = self.llm_selector.get_llm()
             answer = llm.make_llm_call(messages)
             
             # Affichage de la réponse

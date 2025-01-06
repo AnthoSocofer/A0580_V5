@@ -54,6 +54,9 @@ class App:
         with st.sidebar:
             st.title("📚 Assistant Documentaire")
             
+            # Sélecteur de modèle LLM
+            self.chat_page.llm_selector.render()
+            
             # Onglets de navigation
             tab_gestion, tab_chat = st.tabs([
                 "Gestion Documentaire",
