@@ -8,6 +8,7 @@ from dsrag.llm import OpenAIChatAPI
 from src.core.search_engine import SearchEngine, DocumentReference
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from src.pages.llm_selector import LLMSelector
+from src.core.state_manager import StateManager
 
 class ChatPage:
     def __init__(self, kb_manager: KnowledgeBasesManager):
@@ -19,28 +20,24 @@ class ChatPage:
         self.kb_manager = kb_manager
         self.search_engine = SearchEngine()
         self.llm_selector = LLMSelector()
-        
-        if 'messages' not in st.session_state:
-            st.session_state.messages = []
-        if 'selected_kbs' not in st.session_state:
-            st.session_state.selected_kbs = []
-        if 'selected_docs' not in st.session_state:
-            st.session_state.selected_docs = []
-        if 'kb_filter_initialized' not in st.session_state:
-            st.session_state.kb_filter_initialized = False
+        StateManager.initialize_states()
     
     def handle_kb_selection(self, selected_kbs: List[str]):
         """Gère la sélection des bases de connaissances"""
-        st.session_state.selected_kbs = selected_kbs
+        chat_state = StateManager.get_chat_state()
+        chat_state.selected_kbs = selected_kbs
         if not selected_kbs:  # Si aucune base sélectionnée, vider aussi la sélection des documents
-            st.session_state.selected_docs = []
+            chat_state.selected_docs = []
+        StateManager.update_chat_state(chat_state)
     
     def handle_doc_selection(self, selected_docs: List[str]):
         """Gère la sélection des documents"""
-        st.session_state.selected_docs = selected_docs
+        chat_state = StateManager.get_chat_state()
+        chat_state.selected_docs = selected_docs
+        StateManager.update_chat_state(chat_state)
     
     def render_filters(self, knowledge_bases: List[Dict[str, Any]], key_prefix: str = ""):
-        """Affiche les filtres de recherche dans la sidebar
+        """Affiche les filtres de recherche dans la sidebar.
         
         Args:
             knowledge_bases: Liste des bases de connaissances
@@ -49,51 +46,54 @@ class ChatPage:
         # Filtre des bases de connaissances
         st.markdown("### Bases de connaissances")
         
-        # Initialiser les options une seule fois
-        if 'kb_options' not in st.session_state:
-            st.session_state.kb_options = {
+        chat_state = StateManager.get_chat_state()
+        
+        # Initialiser ou mettre à jour les options si nécessaire
+        if not chat_state.kb_options or len(chat_state.kb_options) != len(knowledge_bases):
+            chat_state.kb_options = {
                 kb.get('title', kb['kb_id']): kb['kb_id']
                 for kb in knowledge_bases
             }
+            # Réinitialiser les sélections si les options ont changé
+            chat_state.selected_kb_titles = list(chat_state.kb_options.keys())
+            chat_state.selected_kbs = list(chat_state.kb_options.values())
+            chat_state.kb_filter_initialized = True
+            chat_state.cached_documents = {}
+            StateManager.update_chat_state(chat_state)
         
-        # Initialiser la sélection par défaut une seule fois
-        if not st.session_state.kb_filter_initialized:
-            st.session_state.selected_kb_titles = list(st.session_state.kb_options.keys())
-            st.session_state.selected_kbs = list(st.session_state.kb_options.values())
-            st.session_state.kb_filter_initialized = True
-        
-        # Sélection des bases
+        # Afficher le sélecteur de bases de connaissances
         selected_kb_titles = st.multiselect(
-            "Sélectionnez les bases de connaissances à interroger",
-            options=list(st.session_state.kb_options.keys()),
-            default=st.session_state.selected_kb_titles,
-            key=f"{key_prefix}_kb_multiselect"
+            "Bases de connaissances",
+            options=list(chat_state.kb_options.keys()),
+            default=chat_state.selected_kb_titles,
+            key=f"{key_prefix}kb_selector"
         )
         
-        # Mettre à jour la sélection seulement si elle a changé
-        if selected_kb_titles != st.session_state.selected_kb_titles:
-            st.session_state.selected_kb_titles = selected_kb_titles
-            st.session_state.selected_kbs = [st.session_state.kb_options[title] for title in selected_kb_titles]
-            st.session_state.selected_docs = []  # Réinitialiser la sélection des documents
-            if 'cached_documents' in st.session_state:
-                del st.session_state.cached_documents  # Forcer le rechargement des documents
+        # Mise à jour des sélections si changées
+        if selected_kb_titles != chat_state.selected_kb_titles:
+            chat_state.selected_kb_titles = selected_kb_titles
+            chat_state.selected_kbs = [chat_state.kb_options[title] for title in selected_kb_titles]
+            chat_state.selected_docs = []
+            chat_state.cached_documents = {}
+            StateManager.update_chat_state(chat_state)
         
         # Filtre des documents
-        if st.session_state.selected_kbs:
+        if chat_state.selected_kbs:
             st.markdown("### Documents")
             
             # Initialiser ou mettre à jour le cache des documents
-            if 'cached_documents' not in st.session_state:
-                st.session_state.cached_documents = {}
-                for kb_id in st.session_state.selected_kbs:
-                    if kb_id not in st.session_state.cached_documents:
+            if not chat_state.cached_documents:
+                chat_state.cached_documents = {}
+                for kb_id in chat_state.selected_kbs:
+                    if kb_id not in chat_state.cached_documents:
                         docs = self.kb_manager.list_documents(kb_id)
-                        st.session_state.cached_documents[kb_id] = docs
+                        chat_state.cached_documents[kb_id] = docs
+                StateManager.update_chat_state(chat_state)
             
             # Construire la liste des documents disponibles
             all_docs = []
-            for kb_id in st.session_state.selected_kbs:
-                docs = st.session_state.cached_documents.get(kb_id, [])
+            for kb_id in chat_state.selected_kbs:
+                docs = chat_state.cached_documents.get(kb_id, [])
                 for doc in docs:
                     doc_title = doc.get('title', doc['doc_id'])
                     if isinstance(doc_title, dict) and 'title' in doc_title:
@@ -111,14 +111,15 @@ class ChatPage:
             selected_doc_titles = st.multiselect(
                 "Sélectionner les documents",
                 options=list(doc_options.keys()),
-                default=[title for title, doc_id in doc_options.items() if doc_id in st.session_state.selected_docs],
+                default=[title for title, doc_id in doc_options.items() if doc_id in chat_state.selected_docs],
                 key=f"{key_prefix}_doc_multiselect"
             )
             
             # Mettre à jour la sélection des documents seulement si elle a changé
             new_selected_docs = [doc_options[title] for title in selected_doc_titles]
-            if new_selected_docs != st.session_state.selected_docs:
-                st.session_state.selected_docs = new_selected_docs
+            if new_selected_docs != chat_state.selected_docs:
+                chat_state.selected_docs = new_selected_docs
+                StateManager.update_chat_state(chat_state)
     
     def render_sources(self, segments, expanded=False):
         """Affiche les sources dans un expander"""
@@ -170,24 +171,24 @@ class ChatPage:
         st.title("Assistant de Recherche Documentaire")
         
         # Affichage de l'historique des messages
-        for message in st.session_state.messages:
+        for message in StateManager.get_chat_state().messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
         
         # Zone de saisie du message
         if query := st.chat_input("Posez votre question..."):
-            if not st.session_state.selected_kbs:
+            if not StateManager.get_chat_state().selected_kbs:
                 st.error("Aucune base de connaissances sélectionnée!")
                 return
                 
             # Affichage du message utilisateur
-            st.session_state.messages.append({"role": "user", "content": query})
+            StateManager.get_chat_state().messages.append({"role": "user", "content": query})
             with st.chat_message("user"):
                 st.markdown(query)
             
             # Récupération des bases de connaissances sélectionnées
             knowledge_bases = []
-            for kb_id in st.session_state.selected_kbs:
+            for kb_id in StateManager.get_chat_state().selected_kbs:
                 kb = self.kb_manager.get_knowledge_base(kb_id)
                 if kb:
                     knowledge_bases.append(kb)
@@ -200,8 +201,8 @@ class ChatPage:
             relevant_segments = self.search_engine.search_knowledge_bases(
                 query=query,
                 knowledge_bases=knowledge_bases,
-                selected_kbs=st.session_state.selected_kbs,
-                selected_docs=st.session_state.selected_docs
+                selected_kbs=StateManager.get_chat_state().selected_kbs,
+                selected_docs=StateManager.get_chat_state().selected_docs
             )
             print('relevant_segments', relevant_segments)
             # Préparation du contexte avec indication des sources
@@ -233,7 +234,7 @@ class ChatPage:
             answer = llm.make_llm_call(messages)
             
             # Affichage de la réponse
-            st.session_state.messages.append({"role": "assistant", "content": answer})
+            StateManager.get_chat_state().messages.append({"role": "assistant", "content": answer})
             with st.chat_message("assistant"):
                 st.markdown(answer)
                 self.render_source_summary(sorted_segments)

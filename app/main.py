@@ -9,6 +9,7 @@ from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from src.pages.chat_page import ChatPage
 from src.pages.sidebar_page import KnowledgeBasePage
 from src.config.load_config import load_config
+from src.core.state_manager import StateManager
 
 # Chargement des variables d'environnement
 load_dotenv()
@@ -37,46 +38,34 @@ class App:
         self.chat_page = ChatPage(kb_manager=self.kb_manager)
         self.kb_page = KnowledgeBasePage(self.kb_manager)
         
-        # Initialisation de l'état de session
-        if 'messages' not in st.session_state:
-            st.session_state.messages = []
-        if 'selected_kbs' not in st.session_state:
-            st.session_state.selected_kbs = []
-        if 'selected_docs' not in st.session_state:
-            st.session_state.selected_docs = []
-        if 'kb_filter_initialized' not in st.session_state:
-            st.session_state.kb_filter_initialized = False
-        if 'current_tab' not in st.session_state:
-            st.session_state.current_tab = "gestion"
+        # Initialisation des états via le StateManager
+        StateManager.initialize_states()
     
     def _render_sidebar(self):
         """Affiche la barre latérale."""
         with st.sidebar:
-            
             # Sélecteur de modèle LLM
-            st.title("Sélection du modèle")
+            st.markdown("## Sélection du modèle")
             self.chat_page.llm_selector.render()
-            # Onglets de navigation
-            st.title("Gestion des Bases de Connaissances")
+            
+            # Onglets de gestion
+            st.markdown("## Gestion des Bases de Connaissances")
             tab_gestion, tab_chat = st.tabs([
                 "Gestion Documentaire",
                 "Filtres"
             ])
             
-            # Chargement des bases une seule fois par session
-            if 'knowledge_bases' not in st.session_state:
-                st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+            # Mise à jour de la liste des bases de connaissances
+            kb_state = StateManager.get_kb_state()
+            kb_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+            StateManager.update_kb_state(kb_state)
             
             # Affichage du contenu des onglets
             with tab_gestion:
                 self.kb_page.render()
             
             with tab_chat:
-                self.chat_page.render_filters(st.session_state.knowledge_bases, key_prefix="sidebar_")
-            
-            # Mise à jour de l'onglet actif
-            if tab_gestion.id not in st.session_state or tab_chat.id not in st.session_state:
-                st.session_state.current_tab = "gestion"
+                self.chat_page.render_filters(kb_state.knowledge_bases, key_prefix="sidebar_")
     
     def render(self):
         """Affiche l'application."""

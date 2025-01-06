@@ -10,6 +10,7 @@ from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from dsrag.knowledge_base import KnowledgeBase
 from src.pages import components
 from src.pages.llm_selector import LLMSelector
+from src.core.state_manager import StateManager
 
 class KnowledgeBasePage:
     """Page de gestion des bases de connaissances."""
@@ -19,12 +20,7 @@ class KnowledgeBasePage:
         self.kb_manager = kb_manager
         self.logger = logging.getLogger(__name__)
         self.llm_selector = LLMSelector()
-        if 'current_kb' not in st.session_state:
-            st.session_state.current_kb = None
-        if 'active_expander' not in st.session_state:
-            st.session_state.active_expander = None
-        if 'current_kb_id' not in st.session_state:
-            st.session_state.current_kb_id = None
+        StateManager.initialize_states()
 
     def handle_kb_creation(self, kb_id: str, title: str, description: str):
         """Gère la création d'une base de connaissances."""
@@ -35,30 +31,33 @@ class KnowledgeBasePage:
                 description=description,
                 exists_ok=True
             )
-            st.session_state.current_kb = kb
-            st.session_state.current_kb_id = kb_id
+            kb_state = StateManager.get_kb_state()
+            kb_state.current_kb = kb
+            kb_state.current_kb_id = kb_id
+            StateManager.update_kb_state(kb_state)
             st.success(f"Base '{title}' créée avec succès!")
         except Exception as e:
             st.error(f"Erreur lors de la création: {str(e)}")
     
     def handle_kb_selection(self, kb_id: str):
         """Gère la sélection d'une base de connaissances."""
-        if kb_id == st.session_state.get('current_kb_id'):  # Évite les rechargements inutiles
+        kb_state = StateManager.get_kb_state()
+        if kb_id == kb_state.current_kb_id:  # Évite les rechargements inutiles
             return
             
         try:
             kb = self.kb_manager.get_knowledge_base(kb_id)
             if kb:
-                st.session_state.current_kb = kb
-                st.session_state.current_kb_id = kb_id
-            else:
-                st.error(f"Erreur lors du chargement de la base {kb_id}")
+                kb_state.current_kb = kb
+                kb_state.current_kb_id = kb_id
+                StateManager.update_kb_state(kb_state)
         except Exception as e:
-            st.error(f"Erreur lors du chargement: {str(e)}")
+            st.error(f"Erreur lors du chargement de la base: {str(e)}")
     
     def handle_document_upload(self, files: List[tempfile.NamedTemporaryFile]):
         """Gère l'upload de documents."""
-        kb = st.session_state.current_kb
+        kb_state = StateManager.get_kb_state()
+        kb = kb_state.current_kb
         if not kb:
             st.error("Aucune base sélectionnée")
             return
@@ -118,12 +117,17 @@ class KnowledgeBasePage:
     
     def handle_expander_change(self, kb_id: str, is_expanded: bool):
         """Gère le changement d'état d'un expander."""
+        kb_state = StateManager.get_kb_state()
         if is_expanded:
-            if st.session_state.active_expander != kb_id:
-                st.session_state.active_expander = kb_id
+            if kb_state.active_expander != kb_id:
+                kb_state.active_expander = kb_id
+                StateManager.update_kb_state(kb_state)
                 self.handle_kb_selection(kb_id)
-        elif st.session_state.active_expander == kb_id:
-            st.session_state.active_expander = None
+        elif kb_state.active_expander == kb_id:
+            kb_state.active_expander = None
+            kb_state.current_kb = None
+            kb_state.current_kb_id = None
+            StateManager.update_kb_state(kb_state)
             st.session_state.current_kb = None
             st.session_state.current_kb_id = None
     
@@ -144,16 +148,17 @@ class KnowledgeBasePage:
         """Gère la suppression d'une base de connaissances."""
         if self.kb_manager.delete_knowledge_base(kb_id):
             st.success(f"Base {kb_id} supprimée")
-            st.session_state.active_expander = None
-            st.session_state.current_kb = None
-            st.session_state.current_kb_id = None
+            kb_state = StateManager.get_kb_state()
+            kb_state.active_expander = None
+            kb_state.current_kb = None
+            kb_state.current_kb_id = None
+            StateManager.update_kb_state(kb_state)
             if 'knowledge_bases' in st.session_state:
                 st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
             st.rerun()
 
     def render(self):
         """Affiche la page de gestion des bases de connaissances."""
-        
         
         # Création d'une nouvelle base
         with st.expander("Créer une nouvelle base", expanded=False):
@@ -164,7 +169,7 @@ class KnowledgeBasePage:
         
         components.knowledge_bases_list(
             kb_manager=self.kb_manager,
-            active_expander=st.session_state.active_expander,
+            active_expander=StateManager.get_kb_state().active_expander,
             on_expander_change=self.handle_expander_change,
             on_document_upload=self.handle_document_upload,
             on_document_delete=self.handle_document_delete,

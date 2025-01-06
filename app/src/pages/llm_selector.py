@@ -3,6 +3,7 @@ Composant de sélection de l'API LLM.
 """
 import streamlit as st
 from dsrag.llm import OpenAIChatAPI, AnthropicChatAPI
+from src.core.state_manager import StateManager
 
 class LLMSelector:
     """Composant pour sélectionner l'API LLM à utiliser."""
@@ -22,15 +23,13 @@ class LLMSelector:
     
     def __init__(self):
         """Initialise le sélecteur LLM."""
-        if 'selected_llm' not in st.session_state:
-            st.session_state.selected_llm = 'OpenAI'  # Valeur par défaut
-        if 'selected_model' not in st.session_state:
-            st.session_state.selected_model = '3.5-turbo'  # Valeur par défaut
+        StateManager.initialize_states()
             
     def get_llm(self):
         """Retourne l'instance LLM appropriée basée sur la sélection."""
-        model = st.session_state.selected_model
-        if st.session_state.selected_llm == 'OpenAI':
+        llm_state = StateManager.get_llm_state()
+        model = llm_state.selected_model
+        if llm_state.selected_llm == 'OpenAI':
             # Convertir le nom court en nom complet pour OpenAI
             full_model_name = self.OPENAI_MODELS.get(model, model)
             return OpenAIChatAPI(model=full_model_name)
@@ -41,23 +40,33 @@ class LLMSelector:
             
     def render(self):
         """Affiche le sélecteur LLM dans la sidebar."""
-        selected = st.radio(
+        llm_state = StateManager.get_llm_state()
+        
+        # Sélection de l'API
+        selected_llm = st.radio(
             "API LLM",
             options=['OpenAI', 'Anthropic'],
-            key='selected_llm',
-            horizontal=True
+            index=0 if llm_state.selected_llm == 'OpenAI' else 1,
+            horizontal=True,
+            key='selected_llm'
         )
         
-        # Sélection du modèle en fonction de l'API choisie
-        if st.session_state.selected_llm == 'OpenAI':
-            model = st.selectbox(
-                "Modèle",
-                options=list(self.OPENAI_MODELS.keys()),
-                key='selected_model'
-            )
-        else:
-            model = st.selectbox(
-                "Modèle",
-                options=list(self.CLAUDE_MODELS.keys()),
-                key='selected_model'
-            )
+        # Mise à jour de l'état si changé
+        if selected_llm != llm_state.selected_llm:
+            llm_state.selected_llm = selected_llm
+            # Réinitialiser le modèle au défaut pour la nouvelle API
+            llm_state.selected_model = "3.5-turbo" if selected_llm == "OpenAI" else "haiku"
+            StateManager.update_llm_state(llm_state)
+        
+        # Sélection du modèle en fonction de l'API
+        models = self.OPENAI_MODELS.keys() if selected_llm == 'OpenAI' else self.CLAUDE_MODELS.keys()
+        selected_model = st.selectbox(
+            "Modèle",
+            options=list(models),
+            key='selected_model'
+        )
+        
+        # Mise à jour de l'état si changé
+        if selected_model != llm_state.selected_model:
+            llm_state.selected_model = selected_model
+            StateManager.update_llm_state(llm_state)

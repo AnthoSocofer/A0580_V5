@@ -128,7 +128,7 @@ class SearchEngine:
         try:
             results = kb.search(
                 query=query,
-                top_k=10,
+                top_k=7,
                 metadata_filter=metadata_filter
             )
             
