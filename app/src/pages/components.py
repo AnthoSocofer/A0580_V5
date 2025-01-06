@@ -176,19 +176,22 @@ def knowledge_base_expander(
             # Liste des documents
             st.markdown("#### Documents disponibles")
             try:
-                documents = kb_manager.list_documents(kb_id)
-                if documents:
-                    # Créer des colonnes pour chaque ligne de document
-                    for doc in documents:
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            doc_title = doc.get('title', doc['doc_id'])
-                            if isinstance(doc_title, dict) and 'title' in doc_title:
-                                doc_title = doc_title['title']
-                            st.text(doc_title)
-                        with col2:
-                            if st.button("🗑️", key=f"delete_{kb_id}_{doc['doc_id']}"):
-                                on_document_delete(kb_id, doc['doc_id'])
+                if 'documents' in kb:
+                    documents = kb['documents']
+                    if documents:
+                        # Créer des colonnes pour chaque ligne de document
+                        for doc in documents:
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                doc_title = doc.get('title', doc['doc_id'])
+                                if isinstance(doc_title, dict) and 'title' in doc_title:
+                                    doc_title = doc_title['title']
+                                st.text(doc_title)
+                            with col2:
+                                if st.button("🗑️", key=f"delete_{kb_id}_{doc['doc_id']}"):
+                                    on_document_delete(kb_id, doc['doc_id'])
+                    else:
+                        st.info("Aucun document")
                 else:
                     st.info("Aucun document")
             except Exception as e:

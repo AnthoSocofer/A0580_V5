@@ -110,13 +110,16 @@ class KnowledgeBasesManager:
                 try:
                     with open(os.path.join(self.metadata_dir, filename), 'r') as f:
                         metadata = json.load(f)
-                        kb_list.append({
+                        kb_info = {
                             'kb_id': kb_id,
                             'title': metadata.get('title', kb_id),
                             'description': metadata.get('description', ''),
                             'language': metadata.get('language', config.knowledge_base.default_language),
                             'document_count': self._get_document_count(self._knowledge_bases[kb_id]) if kb_id in self._knowledge_bases else 0
-                        })
+                        }
+                        # Ajouter la liste des documents
+                        kb_info['documents'] = self.list_documents(kb_id)
+                        kb_list.append(kb_info)
                 except Exception as e:
                     self.logger.warning(f"Erreur lors de la lecture des métadonnées de {kb_id}: {str(e)}")
                     kb_list.append({
@@ -124,7 +127,8 @@ class KnowledgeBasesManager:
                         'title': kb_id,
                         'description': str(e),
                         'language': config.knowledge_base.default_language,
-                        'document_count': 0
+                        'document_count': 0,
+                        'documents': []
                     })
         return kb_list
 

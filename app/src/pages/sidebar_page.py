@@ -56,37 +56,37 @@ class KnowledgeBasePage:
     
     def handle_document_upload(self, files: List[tempfile.NamedTemporaryFile]):
         """Gère l'upload de documents."""
+        kb = st.session_state.current_kb
+        if not kb:
+            st.error("Aucune base sélectionnée")
+            return
+
         for uploaded_file in files:
             self.logger.info(f"Début du traitement du fichier: {uploaded_file.name}")
+            self.logger.info(f"Ajout du document à la base {kb.kb_id}")
+            
+            # Créer un fichier temporaire pour stocker le contenu
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+                tmp_file.write(uploaded_file.getvalue())
+                tmp_file.flush()
+                
                 try:
-                    # Écrire le contenu du fichier uploadé dans un fichier temporaire
-                    self.logger.debug(f"Création du fichier temporaire: {tmp_file.name}")
-                    tmp_file.write(uploaded_file.getvalue())
-                    tmp_file.flush()  # S'assurer que tout est écrit
-                    self.logger.debug(f"Fichier temporaire créé avec succès: {tmp_file.name}")
-                    
-                    kb = st.session_state.current_kb
-                    if not kb:
-                        self.logger.error("Aucune base de connaissances sélectionnée")
-                        st.error("Veuillez sélectionner une base de connaissances")
-                        return
-
-                    self.logger.info(f"Ajout du document à la base {kb.kb_id}")
+                    # Ajouter le document à la base
                     kb.add_document(
                         doc_id=uploaded_file.name,
-                        file_path=tmp_file.name,  # Utiliser le chemin du fichier temporaire
+                        file_path=tmp_file.name,
                         document_title=uploaded_file.name,
                         auto_context_config={
-                            "use_generated_title": False,  # Disable generated titles
-                            "get_document_summary": True,  # Enable document summaries
-                            "get_section_summaries": True  # Enable section summaries
+                            "use_generated_title": False,
+                            "get_document_summary": True,
+                            "get_section_summaries": True
                         }
                     )
+                    
                     self.logger.info(f"Document {uploaded_file.name} ajouté avec succès à la base {kb.kb_id}")
                     st.success(f"Document {uploaded_file.name} ajouté avec succès!")
                     
-                    # Utiliser un flag pour indiquer que le fichier a été traité
+                    # Marquer le fichier comme traité
                     upload_key = f"upload_{kb.kb_id}"
                     processed_key = f"processed_{upload_key}"
                     
@@ -95,12 +95,11 @@ class KnowledgeBasePage:
                     
                     st.session_state[processed_key].add(uploaded_file.name)
                     
-                    # Mettre à jour la liste des bases
+                    # Forcer le rechargement de la liste des bases pour mettre à jour les documents
                     if 'knowledge_bases' in st.session_state:
-                        self.logger.debug("Rechargement de la liste des bases de connaissances")
-                        st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+                        del st.session_state.knowledge_bases
                     
-                    # Recharger la page une seule fois
+                    # Recharger la page
                     st.rerun()
                 except Exception as e:
                     self.logger.error(f"Erreur lors de l'ajout du document {uploaded_file.name}: {str(e)}")
@@ -131,9 +130,11 @@ class KnowledgeBasePage:
         try:
             self.kb_manager.delete_document(kb_id, doc_id)
             st.success(f"Document {doc_id} supprimé")
-            # Forcer le rechargement des documents
+            # Forcer le rechargement de la liste des bases pour mettre à jour les documents
             if 'knowledge_bases' in st.session_state:
-                st.session_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+                del st.session_state.knowledge_bases
+            # Forcer le rechargement de la page
+            st.rerun()
         except Exception as e:
             st.error(f"Erreur lors de la suppression: {str(e)}")
 
