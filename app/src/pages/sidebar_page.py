@@ -62,7 +62,17 @@ class KnowledgeBasePage:
             st.error("Aucune base sélectionnée")
             return
 
+        upload_key = f"upload_{kb.kb_id}"
+        processed_key = f"processed_{upload_key}"
+        
+        if processed_key not in st.session_state:
+            st.session_state[processed_key] = set()
+            
         for uploaded_file in files:
+            # Vérifier si le fichier a déjà été traité
+            if uploaded_file.name in st.session_state[processed_key]:
+                continue
+                
             self.logger.info(f"Début du traitement du fichier: {uploaded_file.name}")
             self.logger.info(f"Ajout du document à la base {kb.kb_id}")
             
@@ -88,33 +98,17 @@ class KnowledgeBasePage:
                     st.success(f"Document {uploaded_file.name} ajouté avec succès!")
                     
                     # Marquer le fichier comme traité
-                    upload_key = f"upload_{kb.kb_id}"
-                    processed_key = f"processed_{upload_key}"
-                    
-                    if processed_key not in st.session_state:
-                        st.session_state[processed_key] = set()
-                    
                     st.session_state[processed_key].add(uploaded_file.name)
                     
-                    # Forcer le rechargement de la liste des bases pour mettre à jour les documents
-                    if 'knowledge_bases' in st.session_state:
-                        del st.session_state.knowledge_bases
-                    
-                    # Recharger la page
-                    st.rerun()
                 except Exception as e:
-                    self.logger.error(f"Erreur lors de l'ajout du document {uploaded_file.name}: {str(e)}")
                     st.error(f"Erreur lors de l'ajout du document {uploaded_file.name}: {str(e)}")
                 finally:
+                    # Nettoyer le fichier temporaire
                     try:
-                        # S'assurer que le fichier temporaire est fermé et supprimé
-                        self.logger.debug(f"Nettoyage du fichier temporaire: {tmp_file.name}")
-                        tmp_file.close()
                         os.unlink(tmp_file.name)
-                        self.logger.debug("Fichier temporaire supprimé avec succès")
-                    except Exception as e:
-                        self.logger.error(f"Erreur lors de la suppression du fichier temporaire: {str(e)}")
-    
+                    except:
+                        pass
+
     def handle_expander_change(self, kb_id: str, is_expanded: bool):
         """Gère le changement d'état d'un expander."""
         kb_state = StateManager.get_kb_state()

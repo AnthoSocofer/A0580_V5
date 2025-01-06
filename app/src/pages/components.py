@@ -4,6 +4,7 @@ Composants réutilisables pour l'interface utilisateur.
 import streamlit as st
 import tempfile
 from typing import List, Dict, Any, Callable, Optional
+from src.core.state_manager import StateManager
 
 def create_knowledge_base_form(on_submit: Callable[[str, str, str], None]):
     """Formulaire de création d'une base de connaissances.
@@ -78,15 +79,27 @@ def document_uploader(on_upload: Callable[[List[tempfile.NamedTemporaryFile]], N
     Args:
         on_upload: Callback appelé avec la liste des fichiers uploadés
     """
+    key = "document_uploader"
     uploaded_files = st.file_uploader(
         "Sélectionner des documents",
         type=['pdf', 'docx', 'txt'],
         accept_multiple_files=True,
-        help="Formats acceptés: PDF, DOCX, TXT"
+        help="Formats acceptés: PDF, DOCX, TXT",
+        key=key
     )
     
     if uploaded_files:
+        # Process the upload
         on_upload(uploaded_files)
+        
+        # Clear the uploaded files from state
+        kb_state = StateManager.get_kb_state()
+        kb_state.uploaded_files = None
+        StateManager.update_kb_state(kb_state)
+        
+        # Clear the file uploader
+        st.session_state[key] = None
+        st.rerun()
 
 def document_list(documents: List[Dict[str, Any]]):
     """Affichage de la liste des documents.
@@ -151,10 +164,6 @@ def knowledge_base_expander(
             
             # Clé unique pour le widget d'upload
             upload_key = f"upload_{kb_id}"
-            processed_key = f"processed_{upload_key}"
-            
-            if processed_key not in st.session_state:
-                st.session_state[processed_key] = set()
             
             uploaded_files = st.file_uploader(
                 "Sélectionner des fichiers PDF",
@@ -164,14 +173,19 @@ def knowledge_base_expander(
             )
             
             if uploaded_files:
-                # Identifier les fichiers non traités
-                new_files = [
-                    f for f in uploaded_files 
-                    if f.name not in st.session_state[processed_key]
-                ]
+                # Traiter les fichiers uploadés
+                on_document_upload(uploaded_files)
                 
-                if new_files:
-                    on_document_upload(new_files)
+                # Réinitialiser le widget en utilisant un état intermédiaire
+                reset_key = f"reset_{upload_key}"
+                if reset_key not in st.session_state:
+                    st.session_state[reset_key] = False
+                
+                if not st.session_state[reset_key]:
+                    st.session_state[reset_key] = True
+                    st.rerun()
+                else:
+                    st.session_state[reset_key] = False
             
             # Liste des documents
             st.markdown("#### Documents disponibles")
@@ -191,17 +205,15 @@ def knowledge_base_expander(
                                 if st.button("🗑️", key=f"delete_{kb_id}_{doc['doc_id']}"):
                                     on_document_delete(kb_id, doc['doc_id'])
                     else:
-                        st.info("Aucun document")
-                else:
-                    st.info("Aucun document")
+                        st.info("Aucun document dans cette base")
             except Exception as e:
-                st.error(f"Erreur lors de la liste des documents: {str(e)}")
-            
-            st.markdown("---")
+                st.error(f"Erreur lors de l'affichage des documents: {str(e)}")
             
             # Bouton de suppression de la base
-            if st.button("Supprimer la base", key=f"delete_kb_{kb_id}"):
-                on_kb_delete(kb_id)
+            st.markdown("---")
+            if st.button("🗑️ Supprimer la base", key=f"delete_kb_{kb_id}", type="secondary"):
+                if st.button("⚠️ Confirmer la suppression", key=f"confirm_delete_kb_{kb_id}", type="primary"):
+                    on_kb_delete(kb_id)
 
 def knowledge_bases_list(
     kb_manager: Any,

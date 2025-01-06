@@ -30,6 +30,7 @@ class KBState:
     current_kb_id: Optional[str] = None
     active_expander: Optional[str] = None
     knowledge_bases: List[Dict[str, Any]] = None
+    uploaded_files: Optional[List[Any]] = None
 
 class StateManager:
     """Gestionnaire centralisé des états de l'application."""
@@ -54,6 +55,8 @@ class StateManager:
             st.session_state.cached_documents = {}
         if 'knowledge_bases' not in st.session_state:
             st.session_state.knowledge_bases = []
+        if 'uploaded_files' not in st.session_state:
+            st.session_state.uploaded_files = []
 
         # LLM states
         if 'selected_llm' not in st.session_state:
@@ -103,7 +106,8 @@ class StateManager:
             current_kb=st.session_state.current_kb,
             current_kb_id=st.session_state.current_kb_id,
             active_expander=st.session_state.active_expander,
-            knowledge_bases=st.session_state.knowledge_bases
+            knowledge_bases=st.session_state.knowledge_bases,
+            uploaded_files=st.session_state.uploaded_files
         )
 
     @staticmethod
@@ -113,6 +117,7 @@ class StateManager:
         st.session_state.current_kb_id = state.current_kb_id
         st.session_state.active_expander = state.active_expander
         st.session_state.knowledge_bases = state.knowledge_bases or []
+        st.session_state.uploaded_files = state.uploaded_files or []
 
     @staticmethod
     def update_chat_state(state: ChatState):
