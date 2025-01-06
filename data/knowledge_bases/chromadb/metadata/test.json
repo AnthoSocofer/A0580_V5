@@ -1,9 +1,9 @@
 {
     "title": "test",
-    "description": "",
+    "description": "test",
     "language": "fr",
     "supp_id": "",
-    "created_on": 1735935459,
+    "created_on": 1736151086,
     "components": {
         "embedding_model": {
             "subclass_name": "OpenAIEmbedding",
