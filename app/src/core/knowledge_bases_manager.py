@@ -195,11 +195,19 @@ class KnowledgeBasesManager:
                 **kwargs
             )
             
-            # Vérifier que les fichiers ont été créés
+            # Sauvegarder les métadonnées
+            metadata = {
+                "title": title,
+                "description": description,
+                "language": language,
+                "embedding_provider": embedding_provider,
+                "embedding_model": embedding_model,
+                "reranker_provider": reranker_provider,
+                "reranker_model": reranker_model
+            }
             metadata_file = os.path.join(self.metadata_dir, f"{kb_id}.json")
-            if not os.path.exists(metadata_file):
-                self.logger.error(f"Le fichier de métadonnées n'a pas été créé pour {kb_id}")
-                raise RuntimeError("Échec de la création des fichiers de la base")
+            with open(metadata_file, "w") as f:
+                json.dump(metadata, f, indent=2)
             
             # Mettre à jour le cache
             self._knowledge_bases[kb_id] = kb
@@ -294,6 +302,9 @@ class KnowledgeBasesManager:
             self.logger.error(f"Erreur lors de la liste des documents: {str(e)}")
             
         return documents
+    
+    # Alias pour compatibilité
+    get_documents = list_documents
 
     def delete_document(self, kb_id: str, doc_id: str) -> bool:
         """Supprime un document d'une base de connaissances.
@@ -317,4 +328,43 @@ class KnowledgeBasesManager:
             
         except Exception as e:
             self.logger.error(f"Erreur lors de la suppression du document {doc_id} de la base {kb_id}: {str(e)}")
-            raise
+            return False
+
+    def add_document(
+        self,
+        kb_id: str,
+        doc_id: str,
+        file_path: str,
+        document_title: str,
+        auto_context_config: Dict[str, Any]
+    ) -> bool:
+        """Ajoute un document à une base de connaissances.
+        
+        Args:
+            kb_id: ID de la base de connaissances
+            doc_id: ID unique du document
+            file_path: Chemin vers le fichier à ajouter
+            document_title: Titre du document
+            auto_context_config: Configuration pour le chunking automatique
+            
+        Returns:
+            bool: True si le document a été ajouté avec succès
+        """
+        try:
+            kb = self.get_knowledge_base(kb_id)
+            if not kb:
+                raise ValueError(f"Base de connaissances {kb_id} introuvable")
+            
+            # Ajouter le document à la base
+            kb.add_document(
+                doc_id=doc_id,
+                file_path=file_path,
+                document_title=document_title,
+                auto_context_config=auto_context_config
+            )
+            self.logger.info(f"Document {doc_id} ajouté à la base {kb_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'ajout du document {doc_id} à la base {kb_id}: {str(e)}")
+            return False

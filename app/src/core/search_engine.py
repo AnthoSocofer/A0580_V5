@@ -4,22 +4,13 @@ Moteur de recherche pour les bases de connaissances.
 
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Union, Tuple
+from typing import List, Dict, Optional, Union, Tuple, Any
+from src.core.types import DocumentReference
 from dsrag.knowledge_base import KnowledgeBase
 from dsrag.database.vector.types import MetadataFilter
 
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from src.config import config
-
-@dataclass
-class DocumentReference:
-    """Référence à un document trouvé lors d'une recherche."""
-    doc_id: str
-    kb_id: str
-    text: str
-    relevance_score: float
-    page_numbers: Tuple[int, int]
-    search_mode: str
 
 class SearchEngine:
     """Moteur de recherche avec stratégies de fallback."""

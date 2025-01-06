@@ -110,6 +110,23 @@ def _update_from_env(config_dict: Dict) -> None:
                     # Sinon, garde la valeur comme string
                     current_level[config_path[-1]] = value
 
+def _ensure_storage_directories(config_dict: Dict) -> None:
+    """Crée les répertoires de stockage nécessaires.
+    
+    Args:
+        config_dict: Dictionnaire de configuration contenant les chemins
+    """
+    logger = logging.getLogger(__name__)
+    
+    # Récupérer et créer le répertoire principal
+    storage_dir = os.path.expanduser(config_dict["knowledge_base"]["storage_directory"])
+    logger.info(f"Création des répertoires de stockage dans: {storage_dir}")
+    
+    # Créer les répertoires nécessaires
+    os.makedirs(storage_dir, exist_ok=True)
+    os.makedirs(os.path.join(storage_dir, "vector_storage"), exist_ok=True)
+    os.makedirs(os.path.join(storage_dir, "metadata"), exist_ok=True)
+
 def load_config(config_path: Optional[str] = None) -> AppConfig:
     """Charge la configuration depuis les fichiers YAML et variables d'environnement.
     
@@ -140,6 +157,9 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
     
     # Override par variables d'environnement
     _update_from_env(config_dict)
+    
+    # Créer les répertoires de stockage
+    _ensure_storage_directories(config_dict)
     
     # Création des objets de configuration
     try:

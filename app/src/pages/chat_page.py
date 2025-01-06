@@ -1,14 +1,13 @@
 """
-Page de chat avec l'assistant documentaire.
+Page de chat avec l'assistant.
 """
 import streamlit as st
-from typing import List, Dict, Any
-from dsrag.knowledge_base import KnowledgeBase
-from dsrag.llm import OpenAIChatAPI
-from src.core.search_engine import SearchEngine, DocumentReference
-from src.core.knowledge_bases_manager import KnowledgeBasesManager
-from src.pages.llm_selector import LLMSelector
+from typing import Dict, Any, List
 from src.core.state_manager import StateManager
+from src.core.knowledge_bases_manager import KnowledgeBasesManager
+from src.core.types import KnowledgeBase, Document, DocumentReference
+from src.pages.components.llm_selector import LLMSelector
+from src.core.search_engine import SearchEngine
 
 class ChatPage:
     def __init__(self, kb_manager: KnowledgeBasesManager):

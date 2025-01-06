@@ -1,21 +1,21 @@
 """
 Gestionnaire centralisé des états Streamlit de l'application.
 """
-from typing import Any, Dict, List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Any
+from src.core.types import KnowledgeBase
 import streamlit as st
-from dsrag.knowledge_base import KnowledgeBase
 
 @dataclass
 class ChatState:
     """État du chat."""
-    messages: List[Dict[str, Any]] = None
-    selected_kbs: List[str] = None  
-    selected_docs: List[str] = None
+    messages: List[Dict[str, Any]] = field(default_factory=list)
+    selected_kbs: List[str] = field(default_factory=list)  
+    selected_docs: List[str] = field(default_factory=list)
     kb_filter_initialized: bool = False
-    kb_options: Dict[str, str] = None
-    selected_kb_titles: List[str] = None
-    cached_documents: Dict[str, List[Dict[str, Any]]] = None
+    kb_options: Dict[str, str] = field(default_factory=dict)
+    selected_kb_titles: List[str] = field(default_factory=list)
+    cached_documents: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
 
 @dataclass
 class LLMState:
@@ -29,8 +29,8 @@ class KBState:
     current_kb: Optional[KnowledgeBase] = None
     current_kb_id: Optional[str] = None
     active_expander: Optional[str] = None
-    knowledge_bases: List[Dict[str, Any]] = None
-    uploaded_files: Optional[List[Any]] = None
+    knowledge_bases: List[KnowledgeBase] = field(default_factory=list)
+    uploaded_files: Optional[List[Any]] = field(default_factory=list)
 
 class StateManager:
     """Gestionnaire centralisé des états de l'application."""
@@ -54,7 +54,7 @@ class StateManager:
         if 'cached_documents' not in st.session_state:
             st.session_state.cached_documents = {}
         if 'knowledge_bases' not in st.session_state:
-            st.session_state.knowledge_bases = None  # Sera chargé par l'App
+            st.session_state.knowledge_bases = []  # Sera chargé par l'App
         if 'uploaded_files' not in st.session_state:
             st.session_state.uploaded_files = []
 
@@ -116,19 +116,19 @@ class StateManager:
         st.session_state.current_kb = state.current_kb
         st.session_state.current_kb_id = state.current_kb_id
         st.session_state.active_expander = state.active_expander
-        st.session_state.knowledge_bases = state.knowledge_bases or []
-        st.session_state.uploaded_files = state.uploaded_files or []
+        st.session_state.knowledge_bases = state.knowledge_bases
+        st.session_state.uploaded_files = state.uploaded_files
 
     @staticmethod
     def update_chat_state(state: ChatState):
         """Met à jour l'état du chat."""
-        st.session_state.messages = state.messages or []
-        st.session_state.selected_kbs = state.selected_kbs or []
-        st.session_state.selected_docs = state.selected_docs or []
+        st.session_state.messages = state.messages
+        st.session_state.selected_kbs = state.selected_kbs
+        st.session_state.selected_docs = state.selected_docs
         st.session_state.kb_filter_initialized = state.kb_filter_initialized
-        st.session_state.kb_options = state.kb_options or {}
-        st.session_state.selected_kb_titles = state.selected_kb_titles or []
-        st.session_state.cached_documents = state.cached_documents or {}
+        st.session_state.kb_options = state.kb_options
+        st.session_state.selected_kb_titles = state.selected_kb_titles
+        st.session_state.cached_documents = state.cached_documents
 
     @staticmethod
     def clear_chat_state():
