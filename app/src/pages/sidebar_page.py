@@ -20,7 +20,6 @@ class KnowledgeBasePage:
         self.kb_manager = kb_manager
         self.logger = logging.getLogger(__name__)
         self.llm_selector = LLMSelector()
-        StateManager.initialize_states()
 
     def handle_kb_creation(self, kb_id: str, title: str, description: str):
         """Gère la création d'une base de connaissances."""
@@ -128,13 +127,17 @@ class KnowledgeBasePage:
     def handle_document_delete(self, kb_id: str, doc_id: str):
         """Gère la suppression d'un document."""
         try:
+            # Supprimer le document
             self.kb_manager.delete_document(kb_id, doc_id)
-            st.success(f"Document {doc_id} supprimé")
-            # Forcer le rechargement de la liste des bases pour mettre à jour les documents
-            if 'knowledge_bases' in st.session_state:
-                del st.session_state.knowledge_bases
-            # Forcer le rechargement de la page
+            
+            # Mettre à jour l'état des bases
+            kb_state = StateManager.get_kb_state()
+            kb_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+            StateManager.update_kb_state(kb_state)
+            
+            # Forcer la mise à jour de l'interface
             st.rerun()
+            
         except Exception as e:
             st.error(f"Erreur lors de la suppression: {str(e)}")
 

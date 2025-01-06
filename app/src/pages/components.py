@@ -176,16 +176,14 @@ def knowledge_base_expander(
                 # Traiter les fichiers uploadés
                 on_document_upload(uploaded_files)
                 
-                # Réinitialiser le widget en utilisant un état intermédiaire
-                reset_key = f"reset_{upload_key}"
-                if reset_key not in st.session_state:
-                    st.session_state[reset_key] = False
-                
-                if not st.session_state[reset_key]:
-                    st.session_state[reset_key] = True
+                # Réinitialiser le widget d'upload
+                if f"upload_done_{kb_id}" not in st.session_state:
+                    st.session_state[f"upload_done_{kb_id}"] = True
                     st.rerun()
-                else:
-                    st.session_state[reset_key] = False
+                
+            # Nettoyer l'état après le rerun
+            if st.session_state.get(f"upload_done_{kb_id}"):
+                del st.session_state[f"upload_done_{kb_id}"]
             
             # Liste des documents
             st.markdown("#### Documents disponibles")
@@ -202,7 +200,10 @@ def knowledge_base_expander(
                                     doc_title = doc_title['title']
                                 st.text(doc_title)
                             with col2:
-                                if st.button("🗑️", key=f"delete_{kb_id}_{doc['doc_id']}"):
+                                delete_key = f"delete_state_{kb_id}_{doc['doc_id']}"
+                                button_key = f"delete_button_{kb_id}_{doc['doc_id']}"
+                                
+                                if st.button("🗑️", key=button_key):
                                     on_document_delete(kb_id, doc['doc_id'])
                     else:
                         st.info("Aucun document dans cette base")
