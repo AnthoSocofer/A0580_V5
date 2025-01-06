@@ -1,0 +1,37 @@
+{
+    "title": "A0609",
+    "description": "A0609",
+    "language": "en",
+    "supp_id": "",
+    "created_on": 1735899237,
+    "components": {
+        "embedding_model": {
+            "subclass_name": "OpenAIEmbedding",
+            "dimension": 1536,
+            "model": "text-embedding-3-small"
+        },
+        "reranker": {
+            "subclass_name": "CohereReranker",
+            "model": "rerank-multilingual-v3.0"
+        },
+        "auto_context_model": {
+            "subclass_name": "OpenAIChatAPI",
+            "model": "gpt-4o-mini",
+            "temperature": 0.2,
+            "max_tokens": 1000
+        },
+        "vector_db": {
+            "subclass_name": "ChromaDB",
+            "kb_id": "A0609"
+        },
+        "chunk_db": {
+            "subclass_name": "SQLiteDB",
+            "kb_id": "A0609",
+            "storage_directory": "./data/knowledge_bases/chromadb"
+        },
+        "file_system": {
+            "subclass_name": "LocalFileSystem",
+            "base_path": "./data/knowledge_bases/chromadb/page_images"
+        }
+    }
+}
