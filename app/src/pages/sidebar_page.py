@@ -164,9 +164,15 @@ class KnowledgeBasePage:
         # Bases disponibles
         st.markdown("### Bases disponibles")
         
+        # S'assurer que les bases sont chargées
+        kb_state = StateManager.get_kb_state()
+        if kb_state.knowledge_bases is None:
+            kb_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+            StateManager.update_kb_state(kb_state)
+        
         components.knowledge_bases_list(
             kb_manager=self.kb_manager,
-            active_expander=StateManager.get_kb_state().active_expander,
+            active_expander=kb_state.active_expander,
             on_expander_change=self.handle_expander_change,
             on_document_upload=self.handle_document_upload,
             on_document_delete=self.handle_document_delete,

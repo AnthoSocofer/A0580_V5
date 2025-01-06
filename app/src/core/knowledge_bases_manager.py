@@ -100,9 +100,6 @@ class KnowledgeBasesManager:
 
     def list_knowledge_bases(self) -> List[Dict[str, Any]]:
         """Liste toutes les bases de connaissances disponibles."""
-        if not self._knowledge_bases:
-            self._load_existing_bases()
-            
         kb_list = []
         for filename in os.listdir(self.metadata_dir):
             if filename.endswith('.json'):

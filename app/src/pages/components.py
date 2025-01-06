@@ -5,6 +5,7 @@ import streamlit as st
 import tempfile
 from typing import List, Dict, Any, Callable, Optional
 from src.core.state_manager import StateManager
+from src.pages.document_operations import handle_document_upload, handle_document_delete
 
 def create_knowledge_base_form(on_submit: Callable[[str, str, str], None]):
     """Formulaire de création d'une base de connaissances.
@@ -165,6 +166,16 @@ def knowledge_base_expander(
             # Clé unique pour le widget d'upload
             upload_key = f"upload_{kb_id}"
             
+            # Initialiser l'état d'upload si nécessaire
+            if f"upload_state_{kb_id}" not in st.session_state:
+                st.session_state[f"upload_state_{kb_id}"] = {
+                    "pending_files": None,
+                    "upload_completed": False
+                }
+            
+            upload_state = st.session_state[f"upload_state_{kb_id}"]
+            
+            # Widget d'upload de fichiers
             uploaded_files = st.file_uploader(
                 "Sélectionner des fichiers PDF",
                 type=['pdf'],
@@ -172,18 +183,36 @@ def knowledge_base_expander(
                 key=upload_key
             )
             
+            # Bouton de validation de l'upload
             if uploaded_files:
-                # Traiter les fichiers uploadés
-                on_document_upload(uploaded_files)
+                # Ne mettre à jour l'état que si les fichiers ont changé
+                if upload_state["pending_files"] != uploaded_files:
+                    upload_state["pending_files"] = uploaded_files
+                    upload_state["upload_completed"] = False
                 
-                # Réinitialiser le widget d'upload
-                if f"upload_done_{kb_id}" not in st.session_state:
-                    st.session_state[f"upload_done_{kb_id}"] = True
-                    st.rerun()
-                
-            # Nettoyer l'état après le rerun
-            if st.session_state.get(f"upload_done_{kb_id}"):
-                del st.session_state[f"upload_done_{kb_id}"]
+                if not upload_state["upload_completed"] and st.button("📤 Valider l'upload", key=f"validate_upload_{kb_id}"):
+                    try:
+                        # Appeler le callback d'upload
+                        on_document_upload(upload_state["pending_files"])
+                        st.success("Documents ajoutés avec succès!")
+                        
+                        # Marquer la base comme nécessitant un rafraîchissement
+                        if 'knowledge_bases' in st.session_state:
+                            for kb in st.session_state.knowledge_bases:
+                                if kb['kb_id'] == kb_id:
+                                    kb['documents'] = None
+                                    break
+                        
+                        # Marquer l'upload comme terminé
+                        upload_state["upload_completed"] = True
+                        upload_state["pending_files"] = None
+                        st.session_state[upload_key] = None
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Erreur lors de l'upload: {str(e)}")
+                        upload_state["upload_completed"] = False
+                        upload_state["pending_files"] = None
             
             # Liste des documents
             st.markdown("#### Documents disponibles")
@@ -200,11 +229,24 @@ def knowledge_base_expander(
                                     doc_title = doc_title['title']
                                 st.text(doc_title)
                             with col2:
-                                delete_key = f"delete_state_{kb_id}_{doc['doc_id']}"
                                 button_key = f"delete_button_{kb_id}_{doc['doc_id']}"
                                 
                                 if st.button("🗑️", key=button_key):
-                                    on_document_delete(kb_id, doc['doc_id'])
+                                    try:
+                                        # Supprimer le document
+                                        on_document_delete(kb_id, doc['doc_id'])
+                                        st.success("Document supprimé avec succès!")
+                                        
+                                        # Marquer la base comme nécessitant un rafraîchissement
+                                        if 'knowledge_bases' in st.session_state:
+                                            for kb in st.session_state.knowledge_bases:
+                                                if kb['kb_id'] == kb_id:
+                                                    kb['documents'] = None
+                                                    break
+                                        
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Erreur lors de la suppression: {str(e)}")
                     else:
                         st.info("Aucun document dans cette base")
             except Exception as e:
@@ -234,17 +276,30 @@ def knowledge_bases_list(
         on_document_delete: Callback appelé lors de la suppression d'un document
         on_kb_delete: Callback appelé lors de la suppression de la base
     """
-    # Utiliser la liste des bases stockée dans la session
-    if 'knowledge_bases' not in st.session_state:
-        st.session_state.knowledge_bases = kb_manager.list_knowledge_bases()
+    # Utiliser la liste des bases depuis le state manager
+    kb_state = StateManager.get_kb_state()
     
-    for kb in st.session_state.knowledge_bases:
-        knowledge_base_expander(
-            kb=kb,
-            is_active=kb['kb_id'] == active_expander,
-            on_expander_change=on_expander_change,
-            on_document_upload=on_document_upload,
-            on_document_delete=on_document_delete,
-            on_kb_delete=on_kb_delete,
-            kb_manager=kb_manager
-        )
+    # Vérifier si nous devons rafraîchir la liste des bases
+    should_refresh = False
+    if kb_state.knowledge_bases is None:
+        should_refresh = True
+    elif kb_state.knowledge_bases and any(kb.get('documents') is None for kb in kb_state.knowledge_bases):
+        should_refresh = True
+    
+    # Charger ou rafraîchir la liste des bases si nécessaire
+    if should_refresh:
+        kb_state.knowledge_bases = kb_manager.list_knowledge_bases()
+        StateManager.update_kb_state(kb_state)
+    
+    # S'assurer que knowledge_bases n'est pas None avant d'itérer
+    if kb_state.knowledge_bases:
+        for kb in kb_state.knowledge_bases:
+            knowledge_base_expander(
+                kb=kb,
+                is_active=kb['kb_id'] == active_expander,
+                on_expander_change=on_expander_change,
+                on_document_upload=on_document_upload,
+                on_document_delete=on_document_delete,
+                on_kb_delete=on_kb_delete,
+                kb_manager=kb_manager
+            )

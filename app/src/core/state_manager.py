@@ -54,7 +54,7 @@ class StateManager:
         if 'cached_documents' not in st.session_state:
             st.session_state.cached_documents = {}
         if 'knowledge_bases' not in st.session_state:
-            st.session_state.knowledge_bases = []
+            st.session_state.knowledge_bases = None  # Sera chargé par l'App
         if 'uploaded_files' not in st.session_state:
             st.session_state.uploaded_files = []
 

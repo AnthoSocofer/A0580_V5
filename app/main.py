@@ -34,13 +34,18 @@ class App:
         storage_dir = Path(self.config.knowledge_base.storage_directory).expanduser()
         self.kb_manager = KnowledgeBasesManager(storage_directory=str(storage_dir))
         
+        # Initialisation des états via le StateManager
+        StateManager.initialize_states()
+        
+        # Chargement initial des bases de connaissances
+        kb_state = StateManager.get_kb_state()
+        kb_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+        StateManager.update_kb_state(kb_state)
+        
         # Initialisation des pages
         self.chat_page = ChatPage(kb_manager=self.kb_manager)
         self.kb_page = KnowledgeBasePage(self.kb_manager)
         
-        # Initialisation des états via le StateManager
-        StateManager.initialize_states()
-    
     def _render_sidebar(self):
         """Affiche la barre latérale."""
         with st.sidebar:
@@ -55,18 +60,18 @@ class App:
                 "Filtres"
             ])
             
-            # Mise à jour de la liste des bases de connaissances
-            kb_state = StateManager.get_kb_state()
-            kb_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
-            StateManager.update_kb_state(kb_state)
-            
             # Affichage du contenu des onglets
             with tab_gestion:
                 self.kb_page.render()
             
             with tab_chat:
+                # S'assurer que les bases sont chargées pour les filtres
+                kb_state = StateManager.get_kb_state()
+                if kb_state.knowledge_bases is None:
+                    kb_state.knowledge_bases = self.kb_manager.list_knowledge_bases()
+                    StateManager.update_kb_state(kb_state)
                 self.chat_page.render_filters(kb_state.knowledge_bases, key_prefix="sidebar_")
-    
+
     def render(self):
         """Affiche l'application."""
         # Affichage de la barre latérale
