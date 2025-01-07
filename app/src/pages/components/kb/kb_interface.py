@@ -5,7 +5,6 @@ import streamlit as st
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from src.pages.components.kb.kb_operations import KBOperations
 from src.pages.components.kb.kb_creator import KBCreator
-from src.pages.components.kb.kb_viewer import KBViewer
 from src.pages.components.document.document_uploader import DocumentUploader
 
 class KBInterface:
@@ -19,7 +18,6 @@ class KBInterface:
         """
         self.kb_operations = KBOperations(kb_manager)
         self.kb_creator = KBCreator(self.kb_operations)
-        self.kb_viewer = KBViewer(self.kb_operations)
         self.document_uploader = DocumentUploader(kb_manager)
     
     def render(self):
