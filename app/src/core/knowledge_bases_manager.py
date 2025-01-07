@@ -105,14 +105,14 @@ class KnowledgeBasesManager:
             if filename.endswith('.json'):
                 kb_id = filename[:-5]
                 try:
-                    with open(os.path.join(self.metadata_dir, filename), 'r') as f:
-                        metadata = json.load(f)
+                    kb = self.get_knowledge_base(kb_id)
+                    if kb:
                         kb_info = {
                             'kb_id': kb_id,
-                            'title': metadata.get('title', kb_id),
-                            'description': metadata.get('description', ''),
-                            'language': metadata.get('language', config.knowledge_base.default_language),
-                            'document_count': self._get_document_count(self._knowledge_bases[kb_id]) if kb_id in self._knowledge_bases else 0
+                            'title': kb.kb_metadata.get('title', kb_id),
+                            'description': kb.kb_metadata.get('description', ''),
+                            'language': kb.kb_metadata.get('language', config.knowledge_base.default_language),
+                            'document_count': self._get_document_count(kb)
                         }
                         # Ajouter la liste des documents
                         kb_info['documents'] = self.list_documents(kb_id)
@@ -198,20 +198,7 @@ class KnowledgeBasesManager:
                 **kwargs
             )
             
-            # Sauvegarder les métadonnées
-            metadata = {
-                "title": title,
-                "description": description,
-                "language": language,
-                "embedding_provider": embedding_provider,
-                "embedding_model": embedding_model,
-                "reranker_provider": reranker_provider,
-                "reranker_model": reranker_model
-            }
-            
-            metadata_file = os.path.join(self.metadata_dir, f"{kb_id}.json")
-            with open(metadata_file, "w") as f:
-                json.dump(metadata, f, indent=2)
+            # La base est automatiquement sauvegardée par KnowledgeBase.__init__
             
             # Mettre à jour le cache
             self._knowledge_bases[kb_id] = kb
@@ -221,11 +208,6 @@ class KnowledgeBasesManager:
             
         except Exception as e:
             self.logger.error(f"Erreur lors de la création de la base {kb_id}: {str(e)}")
-            # Log plus détaillé de l'état du système
-            try:
-                self.logger.debug(f"État du répertoire: {os.listdir(self.storage_directory)}")
-            except Exception as dir_error:
-                self.logger.error(f"Impossible de lister le répertoire: {str(dir_error)}")
             raise
 
     def _create_embedding_model(

@@ -15,7 +15,7 @@ class ChatInterface:
         chat_state = StateManager.get_chat_state()
         kb_state = StateManager.get_kb_state()
         
-        if not kb_state.current_kb:
+        if not kb_state.current_kb_metadata:
             st.info("Sélectionnez une base de connaissances dans la barre latérale pour commencer.")
             return
             
