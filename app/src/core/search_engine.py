@@ -121,7 +121,8 @@ class SearchEngine:
         try:
             results = kb.search(
                 query=query,
-                metadata_filter=metadata_filter
+                metadata_filter=metadata_filter,
+                top_k=3  # Nombre de résultats à retourner
             )
             
             return [
@@ -167,7 +168,7 @@ class SearchEngine:
                 
                 # Essayer d'abord la recherche avec query()
                 results = []
-                for mode in ["balanced", "fast"]:
+                for mode in ["balanced", "precision"]:  # Remplacé "fast" par "precision"
                     if not results:
                         results = self._query_knowledge_base(kb, query, metadata_filter, mode)
                 
