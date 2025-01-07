@@ -126,6 +126,9 @@ def _ensure_storage_directories(config_dict: Dict) -> None:
     os.makedirs(storage_dir, exist_ok=True)
     os.makedirs(os.path.join(storage_dir, "vector_storage"), exist_ok=True)
     os.makedirs(os.path.join(storage_dir, "metadata"), exist_ok=True)
+    os.makedirs(os.path.join(storage_dir, "documents"), exist_ok=True)  # Pour stocker les documents originaux
+    os.makedirs(os.path.join(storage_dir, "chunks"), exist_ok=True)     # Pour stocker les chunks
+    os.makedirs(os.path.join(storage_dir, "embeddings"), exist_ok=True) # Pour stocker les embeddings
 
 def load_config(config_path: Optional[str] = None) -> AppConfig:
     """Charge la configuration depuis les fichiers YAML et variables d'environnement.

@@ -42,10 +42,10 @@ class App:
         StateManager.initialize_states()
         
         # Initialisation des composants
-        self.chat_interface = ChatInterface()
+        self.chat_interface = ChatInterface(kb_manager=self.kb_manager)
         self.llm_selector = LLMSelector()
         self.kb_filter = KBFilter()
-        self.doc_filter = DocumentFilter()
+        self.doc_filter = DocumentFilter(kb_manager=self.kb_manager)
         self.kb_interface = KBInterface(self.kb_manager)
         
         # Chargement initial des bases de connaissances
@@ -79,67 +79,28 @@ class App:
     def _render_sidebar(self):
         """Affiche la barre latérale."""
         with st.sidebar:
+            
             # Sélecteur de modèle LLM
             st.markdown("## Configuration du modèle")
             self.llm_selector.render()
             
             # Onglets de gestion
             st.markdown("## Gestion des bases")
-            tab_kb, tab_filter = st.tabs(["Bases de connaissances", "Filtre"])
-            
-            with tab_kb:
-                self.kb_interface.render()
-            
+            tab_filter, tab_kb = st.tabs(["Filtre", "Bases de connaissances"])
             with tab_filter:
                 st.markdown("### Filtres de recherche")
                 chat_state = StateManager.get_chat_state()
                 kb_state = StateManager.get_kb_state()
                 
                 # Filtre des bases de connaissances
-                if kb_state.knowledge_bases:
-                    self.kb_filter.render_with_state(
-                        filter_state=kb_state.filter_state,
-                        knowledge_bases=kb_state.knowledge_bases,
-                        on_selection=lambda selected: self._handle_kb_selection(selected),
-                        key_prefix="sidebar_"
-                    )
+                self.kb_filter.render()
                 
                 # Filtre des documents
-                if chat_state.selected_kbs:
-                    documents = []
-                    for kb_id in chat_state.selected_kbs:
-                        raw_docs = self.kb_manager.list_documents(kb_id)
-                        # Conversion en objets Document
-                        kb_docs = [
-                            Document(
-                                filename=doc.get('filename', ''),
-                                title=doc.get('title', '') or doc.get('filename', ''),
-                                description=doc.get('description', ''),
-                                metadata=doc
-                            ) for doc in raw_docs
-                        ]
-                        documents.extend(kb_docs)
-                    
-                    self.doc_filter.render_with_state(
-                        filter_state=chat_state.doc_filter_state,
-                        documents=documents,
-                        on_selection=lambda selected: self._handle_doc_selection(selected),
-                        key_prefix="sidebar_"
-                    )
-    
-    def _handle_kb_selection(self, selected_kbs):
-        """Gère la sélection des bases de connaissances."""
-        chat_state = StateManager.get_chat_state()
-        chat_state.selected_kbs = selected_kbs
-        if not selected_kbs:
-            chat_state.selected_docs = []
-        StateManager.update_chat_state(chat_state)
-    
-    def _handle_doc_selection(self, selected_docs):
-        """Gère la sélection des documents."""
-        chat_state = StateManager.get_chat_state()
-        chat_state.selected_docs = selected_docs
-        StateManager.update_chat_state(chat_state)
+                self.doc_filter.render()
+            with tab_kb:
+                self.kb_interface.render()
+            
+            
     
     def render(self):
         """Affiche l'application."""

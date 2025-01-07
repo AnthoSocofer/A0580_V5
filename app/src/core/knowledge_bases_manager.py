@@ -33,14 +33,15 @@ class KnowledgeBasesManager:
         # Configure logging
         self.logger = logging.getLogger(__name__)
         
-        # Cache des bases de connaissances
+        # Cache des bases de connaissances avec verrou
         self._knowledge_bases: Dict[str, KnowledgeBase] = {}
-        self._loading = False  # Flag pour éviter les chargements récursifs
+        self._loading = False
+        self._kb_locks: Dict[str, bool] = {}
         self._load_existing_bases()
     
     def _load_existing_bases(self) -> None:
         """Charge les bases de connaissances existantes depuis le stockage."""
-        if self._loading:  # Évite les chargements récursifs
+        if self._loading:
             return
             
         try:
@@ -49,37 +50,39 @@ class KnowledgeBasesManager:
                 self.logger.warning(f"Le répertoire de métadonnées n'existe pas: {self.metadata_dir}")
                 return
                 
+            # Chargement optimisé avec vérification des verrous
             for filename in os.listdir(self.metadata_dir):
                 if filename.endswith('.json'):
                     kb_id = filename[:-5]
-                    if kb_id not in self._knowledge_bases:  # Évite les rechargements inutiles
-                        try:
-                            kb = KnowledgeBase(
-                                kb_id=kb_id,
-                                storage_directory=self.storage_directory,
-                                exists_ok=True
-                            )
-                            self._knowledge_bases[kb_id] = kb
-                            self.logger.info(f"Base de connaissances chargée: {kb_id}")
-                        except Exception as e:
-                            self.logger.warning(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
+                    if kb_id not in self._knowledge_bases and not self._kb_locks.get(kb_id, False):
+                        self._load_single_kb(kb_id)
         finally:
             self._loading = False
-
-    def _get_document_count(self, kb: KnowledgeBase) -> int:
-        """Retourne le nombre de documents dans une base."""
+            
+    def _load_single_kb(self, kb_id: str) -> None:
+        """Charge une seule base de connaissances avec gestion des verrous."""
         try:
-            # Utilise l'API de dsrag pour obtenir les IDs des documents
-            doc_ids = kb.chunk_db.get_all_doc_ids()
-            return len(doc_ids)
+            self._kb_locks[kb_id] = True
+            kb = KnowledgeBase(
+                kb_id=kb_id,
+                storage_directory=self.storage_directory,
+                exists_ok=True
+            )
+            self._knowledge_bases[kb_id] = kb
+            self.logger.info(f"Base de connaissances chargée: {kb_id}")
         except Exception as e:
-            self.logger.warning(f"Erreur lors du comptage des documents: {str(e)}")
-            return 0
+            self.logger.warning(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
+        finally:
+            self._kb_locks[kb_id] = False
 
     def get_knowledge_base(self, kb_id: str) -> Optional[KnowledgeBase]:
-        """Récupère une base de connaissances par son ID."""
+        """Récupère une base de connaissances par son ID avec vérification du cache."""
         if kb_id in self._knowledge_bases:
             return self._knowledge_bases[kb_id]
+            
+        if self._kb_locks.get(kb_id, False):
+            self.logger.warning(f"Chargement en cours pour {kb_id}")
+            return None
             
         metadata_file = os.path.join(self.metadata_dir, f"{kb_id}.json")
         if not os.path.exists(metadata_file):
@@ -87,6 +90,7 @@ class KnowledgeBasesManager:
             return None
             
         try:
+            self._kb_locks[kb_id] = True
             kb = KnowledgeBase(
                 kb_id=kb_id,
                 storage_directory=self.storage_directory,
@@ -97,6 +101,18 @@ class KnowledgeBasesManager:
         except Exception as e:
             self.logger.error(f"Erreur lors du chargement de la base {kb_id}: {str(e)}")
             return None
+        finally:
+            self._kb_locks[kb_id] = False
+
+    def _get_document_count(self, kb: KnowledgeBase) -> int:
+        """Retourne le nombre de documents dans une base."""
+        try:
+            # Utilise l'API de dsrag pour obtenir les IDs des documents
+            doc_ids = kb.chunk_db.get_all_doc_ids()
+            return len(doc_ids)
+        except Exception as e:
+            self.logger.warning(f"Erreur lors du comptage des documents: {str(e)}")
+            return 0
 
     def list_knowledge_bases(self) -> List[Dict[str, Any]]:
         """Liste toutes les bases de connaissances disponibles."""

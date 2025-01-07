@@ -1,41 +1,43 @@
 """
 Filtre pour les bases de connaissances.
 """
-from typing import List, Dict, Any, Callable
-from src.pages.components.filters.base_filter import BaseFilter
-from src.pages.states.filter_state import KBFilterState
+import streamlit as st
+from typing import List, Dict, Any
+from src.core.state_manager import StateManager
 from src.core.types import KnowledgeBase
 
-class KBFilter(BaseFilter):
-    """Composant de filtrage pour les bases de connaissances."""
+class KBFilter:
+    """Filtre de sélection des bases de connaissances."""
     
-    def __init__(self):
-        """Initialise le filtre des bases de connaissances."""
-        super().__init__("Bases de connaissances")
-    
-    def render_with_state(self,
-                         filter_state: KBFilterState,
-                         knowledge_bases: List[KnowledgeBase],
-                         on_selection: Callable[[List[str]], None],
-                         key_prefix: str = "") -> None:
-        """Affiche le filtre avec son état.
+    def render(self):
+        """Affiche le filtre des bases de connaissances."""
+        chat_state = StateManager.get_chat_state()
+        kb_state = StateManager.get_kb_state()
         
-        Args:
-            filter_state: État du filtre
-            knowledge_bases: Liste des bases de connaissances
-            on_selection: Callback appelé lors d'une sélection
-            key_prefix: Préfixe pour les clés Streamlit
-        """
-        # Conversion des KBs en format attendu par le filtre
-        items = [
-            {"id": kb.id, "title": kb.title}
-            for kb in knowledge_bases
-        ]
+        if not kb_state.knowledge_bases:
+            st.info("Aucune base de connaissances disponible.")
+            return
+            
+        # Créer les options pour la sélection
+        kb_options = {
+            f"{kb.title} ({kb.id})": kb.id
+            for kb in kb_state.knowledge_bases
+        }
         
-        self.render(
-            filter_state=filter_state,
-            items=items,
-            on_selection=on_selection,
-            key_prefix=key_prefix,
-            placeholder="Sélectionner des bases de connaissances..."
+        # Sélection multiple des bases
+        selected_options = st.multiselect(
+            "Bases de connaissances",
+            options=list(kb_options.keys()),
+            default=[
+                option for option, kb_id in kb_options.items()
+                if kb_id in chat_state.selected_kbs
+            ],
+            format_func=lambda x: x
         )
+        
+        # Mettre à jour l'état avec les bases sélectionnées
+        chat_state.selected_kbs = [
+            kb_options[option]
+            for option in selected_options
+        ]
+        StateManager.update_chat_state(chat_state)
