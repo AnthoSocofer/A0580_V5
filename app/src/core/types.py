@@ -1,28 +1,31 @@
 """
 Types communs utilisés dans l'application.
 """
-from typing import TypedDict, List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field
 
-class Document(TypedDict):
+@dataclass
+class Document:
     """Document dans une base de connaissances."""
-    doc_id: str
-    title: str
-    description: Optional[str]
-    page_count: Optional[int]
-    
-class KnowledgeBase(TypedDict):
-    """Base de connaissances."""
-    kb_id: str
-    title: str
-    description: Optional[str]
-    documents: List[Document]
+    filename: str
+    title: str = ""
+    description: str = ""
+    page_count: Optional[int] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
-class AutoContextConfig(TypedDict):
+@dataclass
+class KnowledgeBase:
+    """Base de connaissances."""
+    id: str
+    title: str
+    description: str = ""
+    documents: List[Document] = field(default_factory=list)
+
+@dataclass
+class AutoContextConfig:
     """Configuration pour le contexte automatique."""
-    use_generated_title: bool
-    get_document_summary: bool
-    get_section_summaries: bool
+    chunk_size: int = 1000
+    overlap: int = 200
 
 @dataclass
 class DocumentReference:

@@ -156,6 +156,9 @@ class KnowledgeBasesManager:
             reranker_provider: Fournisseur du modèle de reranking
             reranker_model: Nom du modèle de reranking
             exists_ok: Si True, écrase la base si elle existe déjà
+            
+        Returns:
+            La base de connaissances créée
         """
         try:
             self.logger.info(f"Création de la base {kb_id} dans {self.storage_directory}")
@@ -205,6 +208,7 @@ class KnowledgeBasesManager:
                 "reranker_provider": reranker_provider,
                 "reranker_model": reranker_model
             }
+            
             metadata_file = os.path.join(self.metadata_dir, f"{kb_id}.json")
             with open(metadata_file, "w") as f:
                 json.dump(metadata, f, indent=2)
