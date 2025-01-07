@@ -34,6 +34,8 @@ class BaseFilter:
                 str(item[id_key]): str(item[title_key]) 
                 for item in items
             }
+            # Sélectionner tous les éléments par défaut
+            filter_state.selected_items = list(filter_state.options.keys())
             filter_state.initialized = True
     
     def render(self,
@@ -49,22 +51,28 @@ class BaseFilter:
             items: Liste des éléments filtrables
             on_selection: Callback appelé lors d'une sélection
             key_prefix: Préfixe pour les clés Streamlit
-            placeholder: Texte à afficher quand aucune sélection
+            placeholder: Texte de placeholder pour le sélecteur
         """
-        st.markdown(f"### {self.title}")
-        
-        # Mise à jour des options
+        # Mettre à jour les options si nécessaire
         self.update_options(filter_state, items)
         
-        # Affichage du sélecteur
-        selected = st.multiselect(
-            label=f"Sélectionner {self.title.lower()}",
-            options=list(filter_state.options.keys()),
-            format_func=lambda x: filter_state.options[x],
-            key=f"{key_prefix}_{self.title.lower().replace(' ', '_')}",
-            placeholder=placeholder or f"Choisir {self.title.lower()}..."
+        # Afficher le sélecteur multiple
+        selected_titles = st.multiselect(
+            self.title,
+            options=list(filter_state.options.values()),
+            default=[filter_state.options[item_id] for item_id in filter_state.selected_items],
+            key=f"{key_prefix}filter_{self.title}",
+            placeholder=placeholder or f"Sélectionner des {self.title.lower()}..."
         )
         
-        # Mise à jour de l'état et callback
-        filter_state.selected_items = selected
-        on_selection(selected)
+        # Mettre à jour la sélection
+        selected_ids = [
+            item_id
+            for item_id, title in filter_state.options.items()
+            if title in selected_titles
+        ]
+        
+        # Si la sélection a changé, mettre à jour l'état et appeler le callback
+        if selected_ids != filter_state.selected_items:
+            filter_state.selected_items = selected_ids
+            on_selection(selected_ids)

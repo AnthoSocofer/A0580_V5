@@ -2,7 +2,8 @@
 État de la conversation.
 """
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from src.pages.states.filter_state import DocumentFilterState
 
 @dataclass
 class ChatState:
@@ -10,7 +11,8 @@ class ChatState:
     messages: List[Dict[str, Any]] = field(default_factory=list)
     selected_kbs: List[str] = field(default_factory=list)
     selected_docs: List[str] = field(default_factory=list)
-    kb_filter_initialized: bool = False
-    kb_options: Dict[str, Any] = field(default_factory=dict)
-    selected_kb_titles: List[str] = field(default_factory=list)
-    cached_documents: Dict[str, Any] = field(default_factory=dict)
+    is_processing: bool = False
+    search_results: List[Dict[str, Any]] = field(default_factory=list)
+    last_query: Optional[str] = None
+    doc_filter_state: DocumentFilterState = field(default_factory=DocumentFilterState)
+    error_message: Optional[str] = None

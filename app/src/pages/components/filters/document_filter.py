@@ -1,9 +1,9 @@
 """
 Filtre pour les documents.
 """
-from typing import List, Dict, Any, Callable
+from typing import List, Callable
 from src.pages.components.filters.base_filter import BaseFilter
-from src.pages.states.filter_state import DocumentFilterState
+from src.pages.states.filter_state import FilterState
 from src.core.types import Document
 
 class DocumentFilter(BaseFilter):
@@ -14,7 +14,7 @@ class DocumentFilter(BaseFilter):
         super().__init__("Documents")
     
     def render_with_state(self,
-                         filter_state: DocumentFilterState,
+                         filter_state: FilterState,
                          documents: List[Document],
                          on_selection: Callable[[List[str]], None],
                          key_prefix: str = "") -> None:
@@ -28,7 +28,10 @@ class DocumentFilter(BaseFilter):
         """
         # Conversion des documents en format attendu par le filtre
         items = [
-            {"id": doc.id, "title": doc.title or doc.filename}
+            {
+                "id": doc.filename,
+                "title": doc.title or doc.filename
+            }
             for doc in documents
         ]
         
