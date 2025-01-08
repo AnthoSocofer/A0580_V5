@@ -63,9 +63,9 @@ class App:
         StateManager.update_kb_state(kb_state)
         
         # Effectuer une recherche initiale dans toutes les bases
-        self._perform_initial_search()
+        self._load_kb_initial_search()
     
-    def _perform_initial_search(self):
+    def _load_kb_initial_search(self):
         """Effectue une recherche initiale dans toutes les bases de connaissances."""
         chat_state = StateManager.get_chat_state()
         kb_state = StateManager.get_kb_state()
@@ -89,8 +89,6 @@ class App:
             tab_filter, tab_kb = st.tabs(["Filtre", "Bases de connaissances"])
             with tab_filter:
                 st.markdown("### Filtres de recherche")
-                chat_state = StateManager.get_chat_state()
-                kb_state = StateManager.get_kb_state()
                 
                 # Filtre des bases de connaissances
                 self.kb_filter.render()
