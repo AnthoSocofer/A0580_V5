@@ -63,8 +63,20 @@ class IUIRenderer(ABC):
     @abstractmethod
     def render_file_uploader(self,
                            label: str,
-                           accepted_types: Optional[List[str]] = None) -> Optional[BinaryIO]:
-        """Affiche un sélecteur de fichier."""
+                           key: Optional[str] = None,
+                           accept_multiple_files: bool = False,
+                           help: Optional[str] = None) -> Any:
+        """Affiche un uploader de fichiers.
+        
+        Args:
+            label: Label de l'uploader
+            key: Clé unique pour l'uploader
+            accept_multiple_files: Si True, permet l'upload de plusieurs fichiers
+            help: Texte d'aide optionnel
+            
+        Returns:
+            Le(s) fichier(s) uploadé(s)
+        """
         pass
     
     @abstractmethod
@@ -76,7 +88,8 @@ class IUIRenderer(ABC):
     def render_text_input(self,
                          label: str,
                          value: str = "",
-                         placeholder: str = "") -> str:
+                         placeholder: str = "",
+                         key: Optional[str] = None) -> str:
         """Affiche une zone de saisie de texte."""
         pass
     
@@ -84,7 +97,8 @@ class IUIRenderer(ABC):
     def render_text_area(self,
                         label: str,
                         value: str = "",
-                        placeholder: str = "") -> str:
+                        placeholder: str = "",
+                        key: Optional[str] = None) -> str:
         """Affiche une zone de saisie de texte multiligne."""
         pass
     

@@ -1,7 +1,7 @@
 """
 Interface utilisateur pour la gestion des bases de connaissances.
 """
-from typing import Optional
+from typing import Optional, List
 from src.pages.interfaces.ui_renderer import IUIRenderer
 from src.pages.components.kb.domain.kb_manager_logic import KBManagerLogic
 
@@ -17,42 +17,8 @@ class KBManagerUI:
     
     def render(self) -> None:
         """Affiche l'interface de gestion des bases de connaissances."""
-        self.ui_renderer.render_markdown("## 📚 Bases de connaissances")
-        
-        # Formulaire de création
-        with self.ui_renderer.expander("➕ Créer une nouvelle base", expanded=False):
-            self._render_create_form()
-        
         # Liste des bases
         self._render_kb_list()
-    
-    def _render_create_form(self) -> None:
-        """Affiche le formulaire de création."""
-        title = self.ui_renderer.render_text_input(
-            "Titre",
-            placeholder="Titre de la base"
-        )
-        
-        description = self.ui_renderer.render_text_area(
-            "Description",
-            placeholder="Description de la base"
-        )
-        
-        if self.ui_renderer.render_button("Créer", key="create_kb_button"):
-            if title and description:
-                kb_id = self.kb_logic.create_knowledge_base(title, description)
-                if kb_id:
-                    self.ui_renderer.render_success(
-                        f"Base de connaissances créée avec succès (ID: {kb_id})"
-                    )
-                else:
-                    self.ui_renderer.render_error(
-                        "Erreur lors de la création de la base"
-                    )
-            else:
-                self.ui_renderer.render_error(
-                    "Le titre et la description sont requis"
-                )
     
     def _render_kb_list(self) -> None:
         """Affiche la liste des bases de connaissances."""
@@ -62,51 +28,65 @@ class KBManagerUI:
             self.ui_renderer.render_info("Aucune base de connaissances disponible")
             return
         
-        self.ui_renderer.render_markdown("### Bases disponibles")
-        
         for idx, kb in enumerate(knowledge_bases):
-            with self.ui_renderer.expander(f"📚 {kb.title}", expanded=False):
-                self.ui_renderer.render_markdown(f"**ID**: {kb.id}")
-                self.ui_renderer.render_markdown(f"**Description**: {kb.description}")
+            with self.ui_renderer.expander(f" {kb.title} ({kb.id})", expanded=False):
+                # Description
+                if kb.description:
+                    self.ui_renderer.render_markdown(f"**Description**: {kb.description}")
                 
-                # Formulaire de mise à jour
-                new_title = self.ui_renderer.render_text_input(
-                    "Nouveau titre",
-                    value=kb.title,
-                    key=f"title_input_{idx}"
+                # Section ajout de documents
+                self.ui_renderer.render_markdown("### Ajouter des documents")
+                
+                # Zone de drag & drop
+                uploaded_files = self.ui_renderer.render_file_uploader(
+                    "Drag and drop files here",
+                    key=f"file_uploader_{kb.id}",
+                    accept_multiple_files=True,
+                    help="Limit 200MB per file"
                 )
                 
-                new_description = self.ui_renderer.render_text_area(
-                    "Nouvelle description",
-                    value=kb.description,
-                    key=f"desc_input_{idx}"
-                )
-                
-                col1, col2 = self.ui_renderer.columns(2)
-                
-                with col1:
-                    if self.ui_renderer.render_button(
-                        "💾 Mettre à jour",
-                        key=f"update_kb_button_{idx}"
-                    ):
-                        if new_title and new_description:
-                            if self.kb_logic.update_knowledge_base(
-                                kb.id, new_title, new_description
-                            ):
-                                self.ui_renderer.render_success("Base mise à jour")
-                            else:
-                                self.ui_renderer.render_error(
-                                    "Erreur lors de la mise à jour"
-                                )
-                
-                with col2:
-                    if self.ui_renderer.render_button(
-                        "🗑️ Supprimer",
-                        key=f"delete_kb_button_{idx}"
-                    ):
-                        if self.kb_logic.delete_knowledge_base(kb.id):
-                            self.ui_renderer.render_success("Base supprimée")
+                # Traitement des fichiers uploadés
+                if uploaded_files:
+                    for file in uploaded_files:
+                        if self.kb_logic.add_document(kb.id, file):
+                            self.ui_renderer.render_success(f"Document {file.name} ajouté")
                         else:
                             self.ui_renderer.render_error(
-                                "Erreur lors de la suppression"
+                                f"Erreur lors de l'ajout de {file.name}"
                             )
+                
+                # Liste des documents
+                self.ui_renderer.render_markdown("### Documents")
+                
+                if not kb.documents:
+                    self.ui_renderer.render_info("Aucun document disponible")
+                else:
+                    for doc in kb.documents:
+                        # Ligne avec document et bouton de suppression
+                        col1, col2 = self.ui_renderer.columns([0.9, 0.1])
+                        with col1:
+                            self.ui_renderer.render_markdown(f" {doc.filename}")
+                        with col2:
+                            if self.ui_renderer.render_button(
+                                "",
+                                key=f"delete_doc_button_{kb.id}_{doc.filename}"
+                            ):
+                                if self.kb_logic.delete_document(kb.id, doc.filename):
+                                    self.ui_renderer.render_success("Document supprimé")
+                                else:
+                                    self.ui_renderer.render_error(
+                                        "Erreur lors de la suppression"
+                                    )
+                
+                # Bouton de suppression de la base en bas
+                self.ui_renderer.render_markdown("---")
+                if self.ui_renderer.render_button(
+                    " Supprimer base de connaissances",
+                    key=f"delete_kb_button_{kb.id}"
+                ):
+                    if self.kb_logic.delete_knowledge_base(kb.id):
+                        self.ui_renderer.render_success("Base supprimée")
+                    else:
+                        self.ui_renderer.render_error(
+                            "Erreur lors de la suppression"
+                        )

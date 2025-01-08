@@ -1,7 +1,7 @@
 """
 Logique métier pour la gestion des bases de connaissances.
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, BinaryIO
 from src.pages.interfaces.state_manager import IStateManager
 from src.pages.interfaces.kb_infrastructure import (
     IKnowledgeBaseProcessor,
@@ -9,7 +9,7 @@ from src.pages.interfaces.kb_infrastructure import (
     IKnowledgeBaseValidator
 )
 from src.core.state_manager import StateManager
-from src.core.types import KnowledgeBase
+from src.core.types import KnowledgeBase, Document
 
 class KBManagerLogic:
     """Logique métier pour la gestion des bases de connaissances."""
@@ -57,13 +57,26 @@ class KBManagerLogic:
             
         raw_kbs = self.kb_store.list_knowledge_bases()
         
-        # Conversion des bases de connaissances
+        # Conversion des bases de connaissances avec leurs documents
         kbs = []
         for raw_kb in raw_kbs:
+            # Convertir les documents bruts en objets Document
+            documents = []
+            for raw_doc in raw_kb.get('documents', []):
+                doc = Document(
+                    filename=raw_doc.get('title', raw_doc.get('doc_id', '')),
+                    title=raw_doc.get('title', ''),
+                    description='',
+                    metadata={}
+                )
+                documents.append(doc)
+            
+            # Créer la base de connaissances
             kb = KnowledgeBase(
-                id=raw_kb.get('id', ''),
+                id=raw_kb.get('kb_id', ''),
                 title=raw_kb.get('title', ''),
-                description=raw_kb.get('description', '')
+                description=raw_kb.get('description', ''),
+                documents=documents
             )
             kbs.append(kb)
             
@@ -75,6 +88,49 @@ class KBManagerLogic:
             return False
             
         success = self.kb_store.delete_knowledge_base(kb_id)
+        if success:
+            self._update_kb_state()
+            
+        return success
+    
+    def delete_document(self, kb_id: str, doc_id: str) -> bool:
+        """Supprime un document d'une base de connaissances."""
+        if not self.kb_store:
+            return False
+            
+        success = self.kb_store.delete_document(kb_id, doc_id)
+        if success:
+            self._update_kb_state()
+            
+        return success
+        
+    def add_document(self, kb_id: str, file: BinaryIO) -> bool:
+        """Ajoute un document à une base de connaissances.
+        
+        Args:
+            kb_id: ID de la base de connaissances
+            file: Fichier à ajouter
+            
+        Returns:
+            True si l'ajout a réussi, False sinon
+        """
+        if not self.kb_store:
+            return False
+            
+        # Validation du fichier
+        if self.kb_validator and not self.kb_validator.validate_document(file):
+            return False
+            
+        # Traitement du fichier
+        if self.kb_processor:
+            processed_file = self.kb_processor.process_document(file)
+            if not processed_file:
+                return False
+        else:
+            processed_file = file
+            
+        # Ajout du document
+        success = self.kb_store.add_document(kb_id, processed_file)
         if success:
             self._update_kb_state()
             

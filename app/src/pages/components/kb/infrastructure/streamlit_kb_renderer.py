@@ -100,6 +100,29 @@ class StreamlitKBRenderer(IUIRenderer):
             default=default or [],
             on_change=on_change
         )
+        
+    def render_file_uploader(self,
+                           label: str,
+                           key: Optional[str] = None,
+                           accept_multiple_files: bool = False,
+                           help: Optional[str] = None) -> Any:
+        """Affiche un uploader de fichiers.
+        
+        Args:
+            label: Label de l'uploader
+            key: Clé unique pour l'uploader
+            accept_multiple_files: Si True, permet l'upload de plusieurs fichiers
+            help: Texte d'aide optionnel
+            
+        Returns:
+            Le(s) fichier(s) uploadé(s)
+        """
+        return st.file_uploader(
+            label=label,
+            key=key,
+            accept_multiple_files=accept_multiple_files,
+            help=help
+        )
     
     def render_chat_input(self, placeholder: str) -> Optional[str]:
         """Affiche une zone de saisie de chat."""
@@ -110,9 +133,3 @@ class StreamlitKBRenderer(IUIRenderer):
         """Contexte pour un message de chat."""
         with st.chat_message(role):
             yield
-    
-    def render_file_uploader(self,
-                           label: str,
-                           accepted_types: Optional[List[str]] = None) -> Optional[Any]:
-        """Affiche un sélecteur de fichier."""
-        return st.file_uploader(label, type=accepted_types)
