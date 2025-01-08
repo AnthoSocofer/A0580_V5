@@ -61,9 +61,9 @@ class KBManagerLogic:
         kbs = []
         for raw_kb in raw_kbs:
             kb = KnowledgeBase(
-                id=raw_kb.kb_id,
-                title=raw_kb.title or "",
-                description=raw_kb.description or ""
+                id=raw_kb.get('id', ''),
+                title=raw_kb.get('title', ''),
+                description=raw_kb.get('description', '')
             )
             kbs.append(kb)
             
@@ -80,6 +80,14 @@ class KBManagerLogic:
             
         return success
     
+    def load_knowledge_bases(self) -> None:
+        """Charge les bases de connaissances et met à jour l'état."""
+        if not self.kb_store:
+            return
+            
+        # Charger les bases et mettre à jour l'état
+        self._update_kb_state()
+
     def _update_kb_state(self) -> None:
         """Met à jour l'état des bases de connaissances."""
         kb_state = self.state_manager.get_kb_state()

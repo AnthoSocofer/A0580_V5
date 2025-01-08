@@ -10,6 +10,10 @@ from src.pages.interfaces.document import (
 )
 from src.pages.interfaces.state_manager import IStateManager
 from src.core.state_manager import StateManager
+from src.core.knowledge_bases_manager import KnowledgeBasesManager
+from src.pages.components.document.domain.document_validator import DocumentValidator
+from src.pages.components.document.domain.document_processor import DocumentProcessor
+from src.pages.components.document.domain.document_store import DocumentStore
 
 class DocumentManagerLogic:
     """Logique métier pour la gestion des documents."""
@@ -18,12 +22,16 @@ class DocumentManagerLogic:
                  state_manager: Optional[IStateManager] = None,
                  document_processor: Optional[IDocumentProcessor] = None,
                  document_store: Optional[IDocumentStore] = None,
-                 document_validator: Optional[IDocumentValidator] = None):
+                 document_validator: Optional[IDocumentValidator] = None,
+                 kb_manager: Optional[KnowledgeBasesManager] = None):
         """Initialise la logique de gestion des documents."""
         self.state_manager = state_manager or StateManager
-        self.document_processor = document_processor
-        self.document_store = document_store
-        self.document_validator = document_validator
+        self.kb_manager = kb_manager
+        
+        # Initialiser les composants avec leurs implémentations par défaut
+        self.document_validator = document_validator or DocumentValidator()
+        self.document_processor = document_processor or DocumentProcessor()
+        self.document_store = document_store or (DocumentStore(kb_manager) if kb_manager else None)
     
     def upload_document(self, file: BinaryIO, kb_id: str) -> Optional[str]:
         """Télécharge un document."""
@@ -35,7 +43,11 @@ class DocumentManagerLogic:
             return None
         
         # Traitement du document
-        metadata = {"kb_id": kb_id}
+        metadata = {
+            "kb_id": kb_id,
+            "doc_id": file.name,
+            "title": file.name
+        }
         document = self.document_processor.process_document(file, metadata)
         
         # Sauvegarde du document

@@ -93,9 +93,6 @@ class App:
         
         # Chargement initial des bases de connaissances
         self._load_initial_knowledge_bases()
-        
-        # Effectuer une recherche initiale dans toutes les bases
-        self._load_kb_initial_search()
 
     def _load_initial_knowledge_bases(self):
         """Charge les bases de connaissances initiales."""
@@ -103,13 +100,6 @@ class App:
             self.kb_logic.load_knowledge_bases()
         except Exception as e:
             st.error(f"Erreur lors du chargement des bases de connaissances: {str(e)}")
-
-    def _load_kb_initial_search(self):
-        """Effectue une recherche initiale dans toutes les bases de connaissances."""
-        try:
-            self.kb_filter_logic.search_all_knowledge_bases()
-        except Exception as e:
-            st.error(f"Erreur lors de la recherche initiale: {str(e)}")
 
     def _render_sidebar(self):
         """Affiche la barre latérale."""
@@ -129,15 +119,18 @@ class App:
             
             with tab_kb:
                 self.kb_ui.render()
+                # Afficher les documents de la base sélectionnée
+                selected_kbs = self.kb_filter_logic.get_selected_kbs()
+                if selected_kbs:
+                    self.doc_ui.render(selected_kbs[0])
 
     def run(self):
         """Lance l'application."""
         self._render_sidebar()
         
         # Affichage de l'interface principale
-        selected_kb = self.kb_filter_logic.get_selected_knowledge_base()
-        if selected_kb:
-            self.doc_ui.render(selected_kb)
+        selected_kbs = self.kb_filter_logic.get_selected_kbs()
+        if selected_kbs:
             self.chat_ui.render()
         else:
             st.info("Veuillez sélectionner une base de connaissances pour commencer.")

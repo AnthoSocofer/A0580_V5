@@ -1,25 +1,24 @@
 """
-Logique métier pour le filtrage des documents.
+Logique métier pour le filtre des documents.
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Optional, Dict, Any
 from src.pages.interfaces.state_manager import IStateManager
-from src.pages.interfaces.filter import IFilterLogic
 from src.pages.interfaces.kb_infrastructure import IKnowledgeBaseStore
 from src.core.state_manager import StateManager
 
 class DocumentFilterLogic:
-    """Logique de filtrage des documents."""
-
-    def __init__(self, 
-                 state_manager: IStateManager,
-                 kb_store: IKnowledgeBaseStore):
-        """Initialise la logique de filtrage des documents."""
-        self.state_manager = state_manager
+    """Logique métier pour le filtre des documents."""
+    
+    def __init__(self,
+                 state_manager: Optional[IStateManager] = None,
+                 kb_store: Optional[IKnowledgeBaseStore] = None):
+        """Initialise la logique de filtrage."""
+        self.state_manager = state_manager or StateManager
         self.kb_store = kb_store
         self._initialize_state()
-
-    def _initialize_state(self):
-        """Initialise l'état du filtre si nécessaire."""
+    
+    def _initialize_state(self) -> None:
+        """Initialise l'état du filtre."""
         chat_state = self.state_manager.get_chat_state()
         if not hasattr(chat_state, 'selected_docs'):
             chat_state.selected_docs = []
@@ -31,11 +30,9 @@ class DocumentFilterLogic:
             chat_state.selected_kb_titles = []
         if not hasattr(chat_state, 'kb_filter_initialized'):
             chat_state.kb_filter_initialized = False
-        if not hasattr(chat_state, 'selected_document_types'):
-            chat_state.selected_document_types = []
         self.state_manager.update_chat_state(chat_state)
-
-    def handle_kb_selection(self, selected_kbs: List[str]):
+    
+    def handle_kb_selection(self, selected_kbs: List[str]) -> None:
         """Gère la sélection des bases de connaissances.
         
         Args:
@@ -46,8 +43,8 @@ class DocumentFilterLogic:
         if not selected_kbs:  # Si aucune base sélectionnée, vider aussi la sélection des documents
             chat_state.selected_docs = []
         self.state_manager.update_chat_state(chat_state)
-
-    def handle_doc_selection(self, selected_docs: List[str]):
+    
+    def handle_doc_selection(self, selected_docs: List[str]) -> None:
         """Gère la sélection des documents.
         
         Args:
@@ -56,7 +53,7 @@ class DocumentFilterLogic:
         chat_state = self.state_manager.get_chat_state()
         chat_state.selected_docs = selected_docs
         self.state_manager.update_chat_state(chat_state)
-
+    
     def get_available_documents(self) -> List[Dict[str, Any]]:
         """Récupère la liste des documents disponibles."""
         chat_state = self.state_manager.get_chat_state()
@@ -91,42 +88,9 @@ class DocumentFilterLogic:
                 }
                 all_docs.append(doc_info)
                 
-        # Appliquer le filtre sur les types de documents
-        return self.apply_document_type_filter(all_docs)
-
+        return all_docs
+    
     def get_selected_documents(self) -> List[str]:
         """Récupère les documents sélectionnés."""
         chat_state = self.state_manager.get_chat_state()
         return chat_state.selected_docs
-
-    def get_available_document_types(self) -> List[str]:
-        """Récupère tous les types de documents disponibles dans la base de connaissances."""
-        knowledge_bases = self.kb_store.list_knowledge_bases()
-        document_types = set()
-        
-        # Récupérer les types de documents depuis les documents de chaque base
-        for kb in knowledge_bases:
-            for doc in kb.get('documents', []):
-                doc_type = doc.get('type')
-                if doc_type:
-                    document_types.add(doc_type)
-        
-        return sorted(list(document_types))
-
-    def get_selected_document_types(self) -> List[str]:
-        """Récupère les types de documents actuellement sélectionnés."""
-        chat_state = self.state_manager.get_chat_state()
-        return chat_state.selected_document_types
-
-    def set_selected_document_types(self, types: List[str]) -> None:
-        """Définit les types de documents sélectionnés."""
-        chat_state = self.state_manager.get_chat_state()
-        chat_state.selected_document_types = types
-        self.state_manager.update_chat_state(chat_state)
-
-    def apply_document_type_filter(self, documents: List[dict]) -> List[dict]:
-        """Applique le filtre sur les types de documents."""
-        selected_types = self.get_selected_document_types()
-        if not selected_types:  # Si aucun type n'est sélectionné, retourne tous les documents
-            return documents
-        return [doc for doc in documents if doc.get('type') in selected_types]

@@ -370,3 +370,7 @@ class KnowledgeBasesManager:
         except Exception as e:
             self.logger.error(f"Erreur lors de l'ajout du document {doc_id} à la base {kb_id}: {str(e)}")
             return False
+
+    def get_supported_extensions(self) -> List[str]:
+        """Retourne les extensions supportées."""
+        return [".pdf", ".txt", ".docx"]

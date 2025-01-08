@@ -38,7 +38,7 @@ class KBManagerUI:
             placeholder="Description de la base"
         )
         
-        if self.ui_renderer.render_button("Créer"):
+        if self.ui_renderer.render_button("Créer", key="create_kb_button"):
             if title and description:
                 kb_id = self.kb_logic.create_knowledge_base(title, description)
                 if kb_id:
@@ -64,7 +64,7 @@ class KBManagerUI:
         
         self.ui_renderer.render_markdown("### Bases disponibles")
         
-        for kb in knowledge_bases:
+        for idx, kb in enumerate(knowledge_bases):
             with self.ui_renderer.expander(f"📚 {kb.title}", expanded=False):
                 self.ui_renderer.render_markdown(f"**ID**: {kb.id}")
                 self.ui_renderer.render_markdown(f"**Description**: {kb.description}")
@@ -72,18 +72,23 @@ class KBManagerUI:
                 # Formulaire de mise à jour
                 new_title = self.ui_renderer.render_text_input(
                     "Nouveau titre",
-                    value=kb.title
+                    value=kb.title,
+                    key=f"title_input_{idx}"
                 )
                 
                 new_description = self.ui_renderer.render_text_area(
                     "Nouvelle description",
-                    value=kb.description
+                    value=kb.description,
+                    key=f"desc_input_{idx}"
                 )
                 
                 col1, col2 = self.ui_renderer.columns(2)
                 
                 with col1:
-                    if self.ui_renderer.render_button("💾 Mettre à jour"):
+                    if self.ui_renderer.render_button(
+                        "💾 Mettre à jour",
+                        key=f"update_kb_button_{idx}"
+                    ):
                         if new_title and new_description:
                             if self.kb_logic.update_knowledge_base(
                                 kb.id, new_title, new_description
@@ -95,7 +100,10 @@ class KBManagerUI:
                                 )
                 
                 with col2:
-                    if self.ui_renderer.render_button("🗑️ Supprimer"):
+                    if self.ui_renderer.render_button(
+                        "🗑️ Supprimer",
+                        key=f"delete_kb_button_{idx}"
+                    ):
                         if self.kb_logic.delete_knowledge_base(kb.id):
                             self.ui_renderer.render_success("Base supprimée")
                         else:

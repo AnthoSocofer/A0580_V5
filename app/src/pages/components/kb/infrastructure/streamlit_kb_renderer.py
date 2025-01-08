@@ -28,28 +28,41 @@ class StreamlitKBRenderer(IUIRenderer):
     def render_text_input(self,
                          label: str,
                          value: str = "",
-                         placeholder: str = "") -> str:
+                         placeholder: str = "",
+                         key: Optional[str] = None) -> str:
         """Affiche une zone de saisie de texte."""
         return st.text_input(
             label=label,
             value=value,
-            placeholder=placeholder
+            placeholder=placeholder,
+            key=key
         )
     
     def render_text_area(self,
                         label: str,
                         value: str = "",
-                        placeholder: str = "") -> str:
+                        placeholder: str = "",
+                        key: Optional[str] = None) -> str:
         """Affiche une zone de saisie de texte multiligne."""
         return st.text_area(
             label=label,
             value=value,
-            placeholder=placeholder
+            placeholder=placeholder,
+            key=key
         )
     
-    def render_button(self, label: str) -> bool:
-        """Affiche un bouton."""
-        return st.button(label)
+    def render_button(self, label: str, key: Optional[str] = None) -> bool:
+        """Affiche un bouton.
+        
+        Args:
+            label: Texte du bouton
+            key: Clé unique pour le bouton. Si non fournie, une clé sera générée
+            
+        Returns:
+            True si le bouton est cliqué, False sinon
+        """
+        button_key = key or f"button_{label.lower().replace(' ', '_')}"
+        return st.button(label, key=button_key)
     
     @contextmanager
     def expander(self, label: str, expanded: bool = False):

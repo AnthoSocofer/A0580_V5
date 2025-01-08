@@ -36,6 +36,11 @@ class ChatLogic:
         
         return bool(kb_state.knowledge_bases and chat_state.selected_kbs)
     
+    def has_selected_kbs(self) -> bool:
+        """Vérifie si des bases sont sélectionnées."""
+        chat_state = self.state_manager.get_chat_state()
+        return bool(chat_state.selected_kbs)
+    
     def process_user_message(self, prompt: str) -> Dict[str, Any]:
         """Traite un message utilisateur.
         
@@ -59,8 +64,11 @@ class ChatLogic:
         self.state_manager.update_chat_state(chat_state)
         
         try:
-            # Rechercher les sources
-            results = self.search_manager.perform_search(prompt)
+            # Rechercher les sources dans les bases sélectionnées
+            results = self.search_manager.search_relevant_content(
+                query=prompt,
+                kb_ids=chat_state.selected_kbs
+            )
             
             if not results:
                 response_content = "Je n'ai trouvé aucun document pertinent."
