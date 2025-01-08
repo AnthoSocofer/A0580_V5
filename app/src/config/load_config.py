@@ -63,52 +63,6 @@ class AppConfig:
     reranker: RerankerConfig
     search: SearchConfig
 
-def _deep_update(base_dict: Dict, update_dict: Dict) -> None:
-    """Met à jour récursivement un dictionnaire.
-    
-    Args:
-        base_dict: Dictionnaire de base
-        update_dict: Dictionnaire de mise à jour
-    """
-    for key, value in update_dict.items():
-        if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
-            _deep_update(base_dict[key], value)
-        else:
-            base_dict[key] = value
-
-def _update_from_env(config_dict: Dict) -> None:
-    """Met à jour la configuration depuis les variables d'environnement.
-    
-    Les variables d'environnement doivent être préfixées par APP_.
-    Exemple: APP_KNOWLEDGE_BASE_STORAGE_DIR=/path/to/storage
-    
-    Args:
-        config_dict: Dictionnaire de configuration à mettre à jour
-    """
-    env_prefix = "APP_"
-    for key, value in os.environ.items():
-        if key.startswith(env_prefix):
-            # Conversion APP_KNOWLEDGE_BASE_STORAGE_DIR en ['knowledge_base', 'storage_dir']
-            config_path = key[len(env_prefix):].lower().split('_')
-            
-            # Navigation dans le dictionnaire
-            current_level = config_dict
-            for part in config_path[:-1]:
-                if part not in current_level:
-                    current_level[part] = {}
-                current_level = current_level[part]
-            
-            # Conversion de type et assignation
-            try:
-                # Tentative de conversion en int
-                current_level[config_path[-1]] = int(value)
-            except ValueError:
-                try:
-                    # Tentative de conversion en float
-                    current_level[config_path[-1]] = float(value)
-                except ValueError:
-                    # Sinon, garde la valeur comme string
-                    current_level[config_path[-1]] = value
 
 def _ensure_storage_directories(config_dict: Dict) -> None:
     """Crée les répertoires de stockage nécessaires.
@@ -125,10 +79,7 @@ def _ensure_storage_directories(config_dict: Dict) -> None:
     # Créer les répertoires nécessaires
     os.makedirs(storage_dir, exist_ok=True)
     os.makedirs(os.path.join(storage_dir, "vector_storage"), exist_ok=True)
-    os.makedirs(os.path.join(storage_dir, "metadata"), exist_ok=True)
-    os.makedirs(os.path.join(storage_dir, "documents"), exist_ok=True)  # Pour stocker les documents originaux
-    os.makedirs(os.path.join(storage_dir, "chunks"), exist_ok=True)     # Pour stocker les chunks
-    os.makedirs(os.path.join(storage_dir, "embeddings"), exist_ok=True) # Pour stocker les embeddings
+
 
 def load_config(config_path: Optional[str] = None) -> AppConfig:
     """Charge la configuration depuis les fichiers YAML et variables d'environnement.
@@ -157,10 +108,7 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
             custom_config = yaml.safe_load(f)
             if custom_config:
                 _deep_update(config_dict, custom_config)
-    
-    # Override par variables d'environnement
-    _update_from_env(config_dict)
-    
+        
     # Créer les répertoires de stockage
     _ensure_storage_directories(config_dict)
     

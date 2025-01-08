@@ -2,7 +2,7 @@ version: "1.0.0"
 environment: "development"
 
 knowledge_base:
-  storage_directory: "./data/knowledge_bases/chromadb"
+  storage_directory: "./app/data/knowledge_bases/chromadb"
   default_language: "fr"
   max_results_per_search: 5
   chunk_size: 1000
