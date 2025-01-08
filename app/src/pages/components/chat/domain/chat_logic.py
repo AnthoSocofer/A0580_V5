@@ -1,7 +1,7 @@
 """
 Logique métier pour le chat.
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from src.pages.interfaces.state_manager import IStateManager
 from src.pages.interfaces.chat import (
     IChatSourceManager,
@@ -40,44 +40,50 @@ class ChatLogic:
         """Vérifie si des bases sont sélectionnées."""
         chat_state = self.state_manager.get_chat_state()
         return bool(chat_state.selected_kbs)
-    
-    def process_user_message(self, prompt: str) -> Dict[str, Any]:
-        """Traite un message utilisateur.
+        
+    def add_user_message(self, message: str) -> None:
+        """Ajoute un message utilisateur à l'historique.
         
         Args:
-            prompt: Message de l'utilisateur
-            
-        Returns:
-            Dict[str, Any]: Réponse formatée avec les sources
+            message: Message de l'utilisateur
         """
         chat_state = self.state_manager.get_chat_state()
-        
-        # Ajouter le message utilisateur
         chat_state.messages.append({
             "role": "user",
-            "content": prompt
+            "content": message
         })
         self.state_manager.update_chat_state(chat_state)
         
-        # Effectuer la recherche
+    def generate_response(self, user_input: str) -> Tuple[str, List[Dict[str, Any]]]:
+        """Génère une réponse à partir d'un message utilisateur.
+        
+        Args:
+            user_input: Message de l'utilisateur
+            
+        Returns:
+            Tuple[str, List[Dict[str, Any]]]: Tuple contenant la réponse et les sources
+        """
+        chat_state = self.state_manager.get_chat_state()
+        
+        # Marquer comme en cours de traitement
         chat_state.is_processing = True
         self.state_manager.update_chat_state(chat_state)
         
         try:
-            # Rechercher les sources dans les bases sélectionnées
+            # Effectuer la recherche
             results = self.search_manager.search_relevant_content(
-                query=prompt,
+                query=user_input,
                 kb_ids=chat_state.selected_kbs
             )
             
             if not results:
                 response_content = "Je n'ai trouvé aucun document pertinent."
+                sources = []
             else:
-                # Générer une réponse basée sur les sources
-                response_content = self.response_generator.generate_response(prompt, results)
-            
-            # Formater les sources
-            sources = self.source_manager.format_sources(results)
+                # Générer la réponse
+                response_content = self.response_generator.generate_response(user_input, results)
+                # Formater les sources
+                sources = self.source_manager.format_sources(results)
             
             # Préparer la réponse
             response = {
@@ -89,23 +95,14 @@ class ChatLogic:
             # Mettre à jour l'état
             chat_state.messages.append(response)
             chat_state.is_processing = False
-            chat_state.last_query = prompt
+            chat_state.last_query = user_input
             chat_state.search_results = results
             self.state_manager.update_chat_state(chat_state)
             
-            return response
+            return response_content, sources
             
         except Exception as e:
-            error_response = {
-                "role": "assistant",
-                "content": f"Une erreur est survenue : {str(e)}",
-                "sources": []
-            }
+            error_message = f"Une erreur est survenue : {str(e)}"
             chat_state.is_processing = False
             self.state_manager.update_chat_state(chat_state)
-            return error_response
-    
-    def is_processing(self) -> bool:
-        """Vérifie si un message est en cours de traitement."""
-        chat_state = self.state_manager.get_chat_state()
-        return chat_state.is_processing
+            return error_message, []

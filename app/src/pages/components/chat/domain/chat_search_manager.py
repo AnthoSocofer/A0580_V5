@@ -2,6 +2,7 @@
 Gestionnaire de recherche pour le chat.
 """
 from typing import List, Dict, Any
+from src.core.types import DocumentReference
 from src.pages.interfaces.chat import IChatSearchManager
 from src.core.search_engine import SearchEngine
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
@@ -48,21 +49,21 @@ class ChatSearchManager(IChatSearchManager):
                 selected_docs=chat_state.selected_docs
             )
             
-            # Formater les résultats
+            # Formater les résultats pour correspondre à l'interface
             formatted_results = []
             for result in results:
                 formatted_result = {
                     "kb_id": result.kb_id,
                     "doc_id": result.doc_id,
-                    "excerpt": result.text,
+                    "text": result.text,
                     "score": result.relevance_score,
-                    "page_start": result.page_numbers[0],
-                    "page_end": result.page_numbers[1],
+                    "page_numbers": result.page_numbers,
                     "search_mode": result.search_mode
                 }
                 formatted_results.append(formatted_result)
-                
+            
             return formatted_results
             
         except Exception as e:
+            print(f"Erreur lors de la recherche : {str(e)}")
             return []

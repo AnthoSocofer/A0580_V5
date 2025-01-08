@@ -54,13 +54,41 @@ class StreamlitDocumentRenderer(IUIRenderer):
     
     def render_file_uploader(self,
                            label: str,
-                           accepted_types: Optional[List[str]] = None) -> Optional[BinaryIO]:
-        """Affiche un sélecteur de fichier."""
-        return st.file_uploader(label, type=accepted_types)
+                           key: Optional[str] = None,
+                           accept_multiple_files: bool = False,
+                           help: Optional[str] = None,
+                           accepted_types: Optional[List[str]] = None) -> Any:
+        """Affiche un uploader de fichiers.
+        
+        Args:
+            label: Label de l'uploader
+            key: Clé unique pour l'uploader
+            accept_multiple_files: Si True, permet l'upload de plusieurs fichiers
+            help: Texte d'aide optionnel
+            accepted_types: Liste des types de fichiers acceptés
+            
+        Returns:
+            Le(s) fichier(s) uploadé(s)
+        """
+        return st.file_uploader(
+            label=label,
+            key=key,
+            type=accepted_types,
+            accept_multiple_files=accept_multiple_files,
+            help=help
+        )
     
-    def render_button(self, label: str) -> bool:
-        """Affiche un bouton."""
-        return st.button(label)
+    def render_button(self, label: str, key: Optional[str] = None) -> bool:
+        """Affiche un bouton.
+        
+        Args:
+            label: Texte du bouton
+            key: Clé unique pour le bouton
+            
+        Returns:
+            True si le bouton est cliqué
+        """
+        return st.button(label, key=key)
     
     def render_chat_input(self, placeholder: str) -> Optional[str]:
         """Affiche une zone de saisie de chat."""
@@ -81,23 +109,27 @@ class StreamlitDocumentRenderer(IUIRenderer):
     def render_text_input(self,
                          label: str,
                          value: str = "",
-                         placeholder: str = "") -> str:
+                         placeholder: str = "",
+                         key: Optional[str] = None) -> str:
         """Affiche une zone de saisie de texte."""
         return st.text_input(
             label=label,
             value=value,
-            placeholder=placeholder
+            placeholder=placeholder,
+            key=key
         )
     
     def render_text_area(self,
                         label: str,
                         value: str = "",
-                        placeholder: str = "") -> str:
+                        placeholder: str = "",
+                        key: Optional[str] = None) -> str:
         """Affiche une zone de saisie de texte multiligne."""
         return st.text_area(
             label=label,
             value=value,
-            placeholder=placeholder
+            placeholder=placeholder,
+            key=key
         )
     
     def columns(self, n: int) -> List[Any]:

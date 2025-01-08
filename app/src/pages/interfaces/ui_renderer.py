@@ -65,7 +65,8 @@ class IUIRenderer(ABC):
                            label: str,
                            key: Optional[str] = None,
                            accept_multiple_files: bool = False,
-                           help: Optional[str] = None) -> Any:
+                           help: Optional[str] = None,
+                           accepted_types: Optional[List[str]] = None) -> Any:
         """Affiche un uploader de fichiers.
         
         Args:
@@ -73,6 +74,7 @@ class IUIRenderer(ABC):
             key: Clé unique pour l'uploader
             accept_multiple_files: Si True, permet l'upload de plusieurs fichiers
             help: Texte d'aide optionnel
+            accepted_types: Liste des types de fichiers acceptés
             
         Returns:
             Le(s) fichier(s) uploadé(s)
@@ -80,8 +82,16 @@ class IUIRenderer(ABC):
         pass
     
     @abstractmethod
-    def render_button(self, label: str) -> bool:
-        """Affiche un bouton."""
+    def render_button(self, label: str, key: Optional[str] = None) -> bool:
+        """Affiche un bouton.
+        
+        Args:
+            label: Texte du bouton
+            key: Clé unique pour le bouton
+            
+        Returns:
+            True si le bouton est cliqué
+        """
         pass
     
     @abstractmethod

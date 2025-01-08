@@ -16,6 +16,9 @@ from src.pages.components.kb.infrastructure.streamlit_kb_renderer import Streaml
 from src.pages.components.document.infrastructure.streamlit_document_renderer import StreamlitDocumentRenderer
 
 from src.pages.components.chat.domain.chat_logic import ChatLogic
+from src.pages.components.chat.domain.chat_source_manager import ChatSourceManager
+from src.pages.components.chat.domain.chat_response_generator import ChatResponseGenerator
+from src.pages.components.chat.domain.chat_search_manager import ChatSearchManager
 from src.pages.components.llm.domain.llm_selector_logic import LLMSelectorLogic
 from src.pages.components.filters.domain.kb_filter_logic import KBFilterLogic
 from src.pages.components.filters.domain.document_filter_logic import DocumentFilterLogic
@@ -62,8 +65,18 @@ class App:
         self.kb_renderer = StreamlitKBRenderer()
         self.doc_renderer = StreamlitDocumentRenderer()
         
+        # Initialisation des composants du chat
+        chat_source_manager = ChatSourceManager(kb_manager=self.kb_manager)
+        chat_response_generator = ChatResponseGenerator()
+        chat_search_manager = ChatSearchManager(kb_manager=self.kb_manager)
+        
         # Initialisation des logiques métier
-        self.chat_logic = ChatLogic(state_manager=StateManager)
+        self.chat_logic = ChatLogic(
+            state_manager=StateManager,
+            source_manager=chat_source_manager,
+            response_generator=chat_response_generator,
+            search_manager=chat_search_manager
+        )
         self.llm_logic = LLMSelectorLogic(state_manager=StateManager)
         self.kb_filter_logic = KBFilterLogic(state_manager=StateManager)
         self.doc_filter_logic = DocumentFilterLogic(

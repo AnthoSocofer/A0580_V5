@@ -53,11 +53,24 @@ class ChatUI:
     
     def _handle_user_input(self, user_input: str) -> None:
         """Gère l'entrée utilisateur."""
-        # Ajout du message utilisateur
+        # Ajout et affichage du message utilisateur
         self.chat_logic.add_user_message(user_input)
+        with self.ui_renderer.chat_message("user"):
+            self.ui_renderer.render_markdown(user_input)
         
         # Génération de la réponse
         response, sources = self.chat_logic.generate_response(user_input)
         
-        # Ajout de la réponse
-        self.chat_logic.add_assistant_message(response, sources)
+        # Affichage de la réponse
+        with self.ui_renderer.chat_message("assistant"):
+            self.ui_renderer.render_markdown(response)
+            if sources:
+                with self.ui_renderer.expander("📚 Sources", expanded=False):
+                    for source in sources:
+                        self.ui_renderer.render_markdown(f"**Document**: {source['title']}")
+                        if source.get("score"):
+                            self.ui_renderer.render_markdown(
+                                f"*Score de pertinence*: {source['score']:.2f}"
+                            )
+                        if source.get("pages"):
+                            self.ui_renderer.render_markdown(f"*{source['pages']}*")
