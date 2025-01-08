@@ -1,10 +1,16 @@
 """
-Tests unitaires pour la logique de chat.
+Tests unitaires pour la logique du chat.
 """
 import pytest
-from unittest.mock import Mock, MagicMock
-from src.pages.components.chat.domain.chat_logic import ChatLogic
-from src.pages.states.chat_state import ChatState
+from unittest.mock import Mock, patch
+
+from app.src.ui.components.chat.business.chat_logic import ChatLogic
+from app.src.ui.interfaces.state_manager import IStateManager
+from app.src.ui.interfaces.chat import (
+    IChatSourceManager,
+    IChatResponseGenerator,
+    IChatSearchManager
+)
 
 class TestChatLogic:
     """Tests pour ChatLogic."""
@@ -12,7 +18,7 @@ class TestChatLogic:
     @pytest.fixture
     def mock_state_manager(self):
         """Fixture pour le mock du gestionnaire d'état."""
-        state_manager = Mock()
+        state_manager = Mock(spec=IStateManager)
         chat_state = ChatState()
         chat_state.messages = []
         chat_state.selected_kbs = ["kb1", "kb2"]
@@ -22,19 +28,19 @@ class TestChatLogic:
     @pytest.fixture
     def mock_source_manager(self):
         """Fixture pour le mock du gestionnaire de sources."""
-        return Mock()
+        return Mock(spec=IChatSourceManager)
     
     @pytest.fixture
     def mock_response_generator(self):
         """Fixture pour le mock du générateur de réponses."""
-        generator = Mock()
+        generator = Mock(spec=IChatResponseGenerator)
         generator.generate_response.return_value = "Réponse test"
         return generator
     
     @pytest.fixture
     def mock_search_manager(self):
         """Fixture pour le mock du gestionnaire de recherche."""
-        manager = Mock()
+        manager = Mock(spec=IChatSearchManager)
         manager.search_relevant_content.return_value = [
             {"title": "Doc1", "score": 0.8}
         ]
@@ -100,3 +106,10 @@ class TestChatLogic:
     def test_has_selected_kbs(self, chat_logic):
         """Teste la vérification des bases sélectionnées."""
         assert chat_logic.has_selected_kbs() is True
+
+    def test_initialization(self, chat_logic):
+        """Test l'initialisation de ChatLogic."""
+        assert chat_logic.state_manager is not None
+        assert chat_logic.source_manager is not None
+        assert chat_logic.response_generator is not None
+        assert chat_logic.search_manager is not None

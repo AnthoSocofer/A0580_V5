@@ -1,10 +1,12 @@
 """
-Tests unitaires pour l'interface utilisateur de chat.
+Tests unitaires pour l'interface utilisateur du chat.
 """
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from src.pages.components.chat.presentation.chat_ui import ChatUI
-from src.pages.components.chat.domain.chat_logic import ChatLogic
+from unittest.mock import Mock, patch, MagicMock
+
+from app.src.ui.components.chat.view.chat_ui import ChatUI
+from app.src.ui.components.chat.business.chat_logic import ChatLogic
+from app.src.ui.interfaces.state_manager import IStateManager
 
 class TestChatUI:
     """Tests pour ChatUI."""
@@ -42,9 +44,11 @@ class TestChatUI:
     @pytest.fixture
     def chat_ui(self, mock_chat_logic, mock_ui_renderer):
         """Fixture pour l'interface utilisateur."""
+        state_manager = Mock(spec=IStateManager)
         return ChatUI(
             chat_logic=mock_chat_logic,
-            ui_renderer=mock_ui_renderer
+            ui_renderer=mock_ui_renderer,
+            state_manager=state_manager
         )
     
     def test_render_with_selected_kbs(self, chat_ui, mock_chat_logic, mock_ui_renderer):
@@ -79,3 +83,8 @@ class TestChatUI:
         # Vérifie qu'aucun message n'est affiché
         mock_ui_renderer.chat_message.assert_not_called()
         mock_ui_renderer.render_chat_input.assert_not_called()
+
+    def test_initialization(self, chat_ui):
+        """Test l'initialisation de ChatUI."""
+        assert chat_ui.chat_logic is not None
+        assert chat_ui.state_manager is not None
