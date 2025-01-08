@@ -9,28 +9,29 @@ from src.config.load_config import load_config
 from src.core.state_manager import StateManager
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 
-from src.pages.components.chat.infrastructure.streamlit_chat_renderer import StreamlitChatRenderer
-from src.pages.components.llm.infrastructure.streamlit_llm_renderer import StreamlitLLMRenderer
-from src.pages.components.filters.infrastructure.streamlit_filter_renderer import StreamlitFilterRenderer
-from src.pages.components.kb.infrastructure.streamlit_kb_renderer import StreamlitKBRenderer
-from src.pages.components.document.infrastructure.streamlit_document_renderer import StreamlitDocumentRenderer
+from src.ui.components.chat.data.streamlit_chat_renderer import StreamlitChatRenderer
+from src.ui.components.llm.data.streamlit_llm_renderer import StreamlitLLMRenderer
+from src.ui.components.filters.data.streamlit_filter_renderer import StreamlitFilterRenderer
+from src.ui.components.kb.data.streamlit_kb_renderer import StreamlitKBRenderer
+from src.ui.components.document.data.streamlit_document_renderer import StreamlitDocumentRenderer
 
-from src.pages.components.chat.domain.chat_logic import ChatLogic
-from src.pages.components.chat.domain.chat_source_manager import ChatSourceManager
-from src.pages.components.chat.domain.chat_response_generator import ChatResponseGenerator
-from src.pages.components.chat.domain.chat_search_manager import ChatSearchManager
-from src.pages.components.llm.domain.llm_selector_logic import LLMSelectorLogic
-from src.pages.components.filters.domain.kb_filter_logic import KBFilterLogic
-from src.pages.components.filters.domain.document_filter_logic import DocumentFilterLogic
-from src.pages.components.kb.domain.kb_manager_logic import KBManagerLogic
-from src.pages.components.document.domain.document_manager_logic import DocumentManagerLogic
+from src.ui.components.chat.business.chat_logic import ChatLogic
+from src.ui.components.chat.business.chat_source_manager import ChatSourceManager
+from src.ui.components.chat.business.chat_response_generator import ChatResponseGenerator
+from src.ui.components.chat.business.chat_search_manager import ChatSearchManager
 
-from src.pages.components.chat.presentation.chat_ui import ChatUI
-from src.pages.components.llm.presentation.llm_selector_ui import LLMSelectorUI
-from src.pages.components.filters.presentation.kb_filter_ui import KBFilterUI
-from src.pages.components.filters.presentation.document_filter_ui import DocumentFilterUI
-from src.pages.components.kb.presentation.kb_manager_ui import KBManagerUI
-from src.pages.components.document.presentation.document_manager_ui import DocumentManagerUI
+from src.ui.components.llm.business.llm_selector_logic import LLMSelectorLogic
+from src.ui.components.filters.business.kb_filter_logic import KBFilterLogic
+from src.ui.components.filters.business.document_filter_logic import DocumentFilterLogic
+from src.ui.components.kb.business.kb_manager_logic import KBManagerLogic
+from src.ui.components.document.business.document_manager_logic import DocumentManagerLogic
+
+from src.ui.components.chat.view.chat_ui import ChatUI
+from src.ui.components.llm.view.llm_selector_ui import LLMSelectorUI
+from src.ui.components.filters.view.kb_filter_ui import KBFilterUI
+from src.ui.components.filters.view.document_filter_ui import DocumentFilterUI
+from src.ui.components.kb.view.kb_manager_ui import KBManagerUI
+from src.ui.components.document.view.document_manager_ui import DocumentManagerUI
 
 # Chargement des variables d'environnement
 load_dotenv()

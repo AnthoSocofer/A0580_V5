@@ -2,10 +2,10 @@
 Gestionnaire centralisé des états Streamlit de l'application.
 """
 import streamlit as st
-from src.pages.states.chat_state import ChatState
-from src.pages.states.llm_state import LLMState
-from src.pages.states.kb_state import KBState
-from src.pages.states.filter_state import KBFilterState, DocumentFilterState, FilterState
+from src.ui.states.chat_state import ChatState
+from src.ui.states.llm_state import LLMState
+from src.ui.states.kb_state import KBState
+from src.ui.states.filter_state import KBFilterState, DocumentFilterState, FilterState
 
 class StateManager:
     """Gestionnaire centralisé des états de l'application."""
