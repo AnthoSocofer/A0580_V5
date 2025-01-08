@@ -5,7 +5,7 @@ import streamlit as st
 from src.pages.states.chat_state import ChatState
 from src.pages.states.llm_state import LLMState
 from src.pages.states.kb_state import KBState
-from src.pages.states.filter_state import KBFilterState, DocumentFilterState
+from src.pages.states.filter_state import KBFilterState, DocumentFilterState, FilterState
 
 class StateManager:
     """Gestionnaire centralisé des états de l'application."""
@@ -26,6 +26,13 @@ class StateManager:
             kb_state = KBState()
             kb_state.filter_state = KBFilterState()
             st.session_state.kb_state = kb_state
+            
+        # Filter states
+        if 'filter_state' not in st.session_state:
+            filter_state = FilterState()
+            filter_state.kb_filter = KBFilterState()
+            filter_state.document_filter = DocumentFilterState()
+            st.session_state.filter_state = filter_state
     
     @staticmethod
     def get_chat_state() -> ChatState:
@@ -43,6 +50,11 @@ class StateManager:
         return st.session_state.kb_state
     
     @staticmethod
+    def get_filter_state() -> FilterState:
+        """Récupère l'état des filtres."""
+        return st.session_state.filter_state
+    
+    @staticmethod
     def update_chat_state(chat_state: ChatState):
         """Met à jour l'état du chat."""
         st.session_state.chat_state = chat_state
@@ -56,3 +68,8 @@ class StateManager:
     def update_kb_state(kb_state: KBState):
         """Met à jour l'état des bases de connaissances."""
         st.session_state.kb_state = kb_state
+        
+    @staticmethod
+    def update_filter_state(filter_state: FilterState):
+        """Met à jour l'état des filtres."""
+        st.session_state.filter_state = filter_state
