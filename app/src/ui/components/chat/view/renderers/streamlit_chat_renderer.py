@@ -74,31 +74,15 @@ class StreamlitChatRenderer(IUIRenderer):
         """Affiche un sélecteur de fichier."""
         return st.file_uploader(label, type=accepted_types)
     
-    def render_button(self, label: str) -> bool:
+    def render_button(self, label: str, key: Optional[str] = None) -> bool:
         """Affiche un bouton."""
-        return st.button(label)
-    
-    def render_text_input(self,
-                         label: str,
-                         value: str = "",
-                         placeholder: str = "") -> str:
-        """Affiche une zone de saisie de texte."""
-        return st.text_input(
-            label=label,
-            value=value,
-            placeholder=placeholder
-        )
-    
-    def render_text_area(self,
-                        label: str,
-                        value: str = "",
-                        placeholder: str = "") -> str:
-        """Affiche une zone de saisie de texte multiligne."""
-        return st.text_area(
-            label=label,
-            value=value,
-            placeholder=placeholder
-        )
+        return st.button(label=label, key=key)
+
+    @contextmanager
+    def container(self) -> Iterator[Any]:
+        """Crée un conteneur Streamlit."""
+        with st.container() as container:
+            yield container
     
     def columns(self, n: int) -> List[Any]:
         """Crée des colonnes."""

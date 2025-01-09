@@ -83,33 +83,15 @@ class IUIRenderer(ABC):
     
     @abstractmethod
     def render_button(self, label: str, key: Optional[str] = None) -> bool:
-        """Affiche un bouton.
+        """Rend un bouton.
         
         Args:
             label: Texte du bouton
-            key: Clé unique pour le bouton
+            key: Clé unique du bouton
             
         Returns:
-            True si le bouton est cliqué
+            True si le bouton a été cliqué
         """
-        pass
-    
-    @abstractmethod
-    def render_text_input(self,
-                         label: str,
-                         value: str = "",
-                         placeholder: str = "",
-                         key: Optional[str] = None) -> str:
-        """Affiche une zone de saisie de texte."""
-        pass
-    
-    @abstractmethod
-    def render_text_area(self,
-                        label: str,
-                        value: str = "",
-                        placeholder: str = "",
-                        key: Optional[str] = None) -> str:
-        """Affiche une zone de saisie de texte multiligne."""
         pass
     
     @abstractmethod

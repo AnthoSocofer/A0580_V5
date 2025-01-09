@@ -9,11 +9,11 @@ from src.config.load_config import load_config
 from src.core.state_manager import StateManager
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 
-from src.ui.components.chat.data.streamlit_chat_renderer import StreamlitChatRenderer
-from src.ui.components.llm.data.streamlit_llm_renderer import StreamlitLLMRenderer
-from src.ui.components.filters.data.streamlit_filter_renderer import StreamlitFilterRenderer
-from src.ui.components.kb.data.streamlit_kb_renderer import StreamlitKBRenderer
-from src.ui.components.document.data.streamlit_document_renderer import StreamlitDocumentRenderer
+from src.ui.components.chat.view.renderers.streamlit_chat_renderer import StreamlitChatRenderer
+from src.ui.components.llm.view.renderers.streamlit_llm_renderer import StreamlitLLMRenderer
+from src.ui.components.filters.view.renderers.streamlit_filter_renderer import StreamlitFilterRenderer
+from src.ui.components.kb.view.renderers.streamlit_kb_renderer import StreamlitKBRenderer
+from src.ui.components.document.view.renderers.streamlit_document_renderer import StreamlitDocumentRenderer
 
 from src.ui.components.chat.business.chat_logic import ChatLogic
 from src.ui.components.chat.business.chat_source_manager import ChatSourceManager
@@ -22,14 +22,12 @@ from src.ui.components.chat.business.chat_search_manager import ChatSearchManage
 
 from src.ui.components.llm.business.llm_selector_logic import LLMSelectorLogic
 from src.ui.components.filters.business.kb_filter_logic import KBFilterLogic
-from src.ui.components.filters.business.document_filter_logic import DocumentFilterLogic
 from src.ui.components.kb.business.kb_manager_logic import KBManagerLogic
 from src.ui.components.document.business.document_manager_logic import DocumentManagerLogic
 
 from src.ui.components.chat.view.chat_ui import ChatUI
 from src.ui.components.llm.view.llm_selector_ui import LLMSelectorUI
 from src.ui.components.filters.view.kb_filter_ui import KBFilterUI
-from src.ui.components.filters.view.document_filter_ui import DocumentFilterUI
 from src.ui.components.kb.view.kb_manager_ui import KBManagerUI
 from src.ui.components.document.view.document_manager_ui import DocumentManagerUI
 
@@ -80,10 +78,6 @@ class App:
         )
         self.llm_logic = LLMSelectorLogic(state_manager=StateManager)
         self.kb_filter_logic = KBFilterLogic(state_manager=StateManager)
-        self.doc_filter_logic = DocumentFilterLogic(
-            state_manager=StateManager,
-            kb_store=self.kb_manager
-        )
         self.kb_logic = KBManagerLogic(
             state_manager=StateManager,
             kb_processor=self.kb_manager,
@@ -101,7 +95,6 @@ class App:
         self.chat_ui = ChatUI(self.chat_logic, self.chat_renderer)
         self.llm_ui = LLMSelectorUI(self.llm_logic, self.llm_renderer)
         self.kb_filter_ui = KBFilterUI(self.kb_filter_logic, self.filter_renderer)
-        self.doc_filter_ui = DocumentFilterUI(self.doc_filter_logic, self.filter_renderer)
         self.kb_ui = KBManagerUI(self.kb_logic, self.kb_renderer)
         self.doc_ui = DocumentManagerUI(self.doc_logic, self.doc_renderer)
         
@@ -128,8 +121,6 @@ class App:
                 st.markdown("### Filtres de recherche")
                 # Filtre des bases de connaissances
                 self.kb_filter_ui.render()
-                # Filtre des documents
-                self.doc_filter_ui.render()
             
             with tab_kb:
                 self.kb_ui.render()

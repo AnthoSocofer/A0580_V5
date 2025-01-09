@@ -29,13 +29,6 @@ class ChatLogic:
         chat_state = self.state_manager.get_chat_state()
         return chat_state.messages
     
-    def check_kb_availability(self) -> bool:
-        """Vérifie la disponibilité des bases de connaissances."""
-        kb_state = self.state_manager.get_kb_state()
-        chat_state = self.state_manager.get_chat_state()
-        
-        return bool(kb_state.knowledge_bases and chat_state.selected_kbs)
-    
     def has_selected_kbs(self) -> bool:
         """Vérifie si des bases sont sélectionnées."""
         chat_state = self.state_manager.get_chat_state()
