@@ -3,3 +3,6 @@
 
 /agency_swarm
 app/data
+
+*.pyc
+__pycache__

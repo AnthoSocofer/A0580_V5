@@ -1,12 +1,15 @@
 """
 Logique métier pour le chat.
 """
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, cast
+from uuid import uuid4
 from src.ui.interfaces.state_manager import IStateManager
 from src.ui.interfaces.chat import (
     IChatSourceManager,
     IChatResponseGenerator,
-    IChatSearchManager
+    IChatSearchManager,
+    ChatMessage,
+    Source
 )
 from src.core.state_manager import StateManager
 
@@ -18,19 +21,34 @@ class ChatLogic:
                  source_manager: Optional[IChatSourceManager] = None,
                  response_generator: Optional[IChatResponseGenerator] = None,
                  search_manager: Optional[IChatSearchManager] = None):
-        """Initialise la logique du chat."""
+        """Initialise la logique du chat.
+        
+        Args:
+            state_manager: Gestionnaire d'état
+            source_manager: Gestionnaire des sources
+            response_generator: Générateur de réponses
+            search_manager: Gestionnaire de recherche
+        """
         self.state_manager = state_manager or StateManager
         self.source_manager = source_manager
         self.response_generator = response_generator
         self.search_manager = search_manager
     
-    def get_messages(self) -> List[Dict[str, Any]]:
-        """Récupère les messages du chat."""
+    def get_messages(self) -> List[ChatMessage]:
+        """Récupère les messages du chat.
+        
+        Returns:
+            Liste des messages avec leurs sources
+        """
         chat_state = self.state_manager.get_chat_state()
-        return chat_state.messages
+        return [cast(ChatMessage, msg) for msg in chat_state.messages]
     
     def has_selected_kbs(self) -> bool:
-        """Vérifie si des bases sont sélectionnées."""
+        """Vérifie si des bases sont sélectionnées.
+        
+        Returns:
+            True si au moins une base est sélectionnée
+        """
         chat_state = self.state_manager.get_chat_state()
         return bool(chat_state.selected_kbs)
         
@@ -41,21 +59,27 @@ class ChatLogic:
             message: Message de l'utilisateur
         """
         chat_state = self.state_manager.get_chat_state()
-        chat_state.messages.append({
+        user_message = cast(ChatMessage, {
+            "id": str(uuid4()),
             "role": "user",
-            "content": message
+            "content": message,
+            "sources": None
         })
+        chat_state.messages.append(user_message)
         self.state_manager.update_chat_state(chat_state)
         
-    def generate_response(self, user_input: str) -> Tuple[str, List[Dict[str, Any]]]:
+    def generate_response(self, user_input: str) -> Tuple[str, List[Source]]:
         """Génère une réponse à partir d'un message utilisateur.
         
         Args:
             user_input: Message de l'utilisateur
             
         Returns:
-            Tuple[str, List[Dict[str, Any]]]: Tuple contenant la réponse et les sources
+            Tuple contenant la réponse et les sources associées
         """
+        if not self.search_manager or not self.response_generator or not self.source_manager:
+            return "Services non initialisés.", []
+            
         chat_state = self.state_manager.get_chat_state()
         
         # Marquer comme en cours de traitement
@@ -71,7 +95,7 @@ class ChatLogic:
             
             if not results:
                 response_content = "Je n'ai trouvé aucun document pertinent."
-                sources = []
+                sources: List[Source] = []
             else:
                 # Générer la réponse
                 response_content = self.response_generator.generate_response(user_input, results)
@@ -79,11 +103,12 @@ class ChatLogic:
                 sources = self.source_manager.format_sources(results)
             
             # Préparer la réponse
-            response = {
+            response = cast(ChatMessage, {
+                "id": str(uuid4()),
                 "role": "assistant",
                 "content": response_content,
                 "sources": sources
-            }
+            })
             
             # Mettre à jour l'état
             chat_state.messages.append(response)

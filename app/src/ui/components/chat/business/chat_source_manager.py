@@ -1,9 +1,9 @@
 """
 Gestionnaire des sources pour le chat.
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, cast
 from src.core.types import DocumentReference
-from src.ui.interfaces.chat import IChatSourceManager
+from src.ui.interfaces.chat import IChatSourceManager, Source
 from src.core.knowledge_bases_manager import KnowledgeBasesManager
 from src.core.state_manager import StateManager
 
@@ -18,14 +18,14 @@ class ChatSourceManager(IChatSourceManager):
         """
         self.kb_manager = kb_manager
     
-    def get_sources_for_message(self, message_id: str) -> List[Dict[str, Any]]:
+    def get_sources_for_message(self, message_id: str) -> List[Source]:
         """Récupère les sources pour un message.
         
         Args:
             message_id: ID du message
             
         Returns:
-            List[Dict[str, Any]]: Liste des sources
+            Liste des sources associées au message
         """
         chat_state = StateManager.get_chat_state()
         if not chat_state.search_results:
@@ -33,7 +33,7 @@ class ChatSourceManager(IChatSourceManager):
             
         return self.format_sources(chat_state.search_results)
     
-    def add_sources_to_message(self, message_id: str, sources: List[Dict[str, Any]]) -> None:
+    def add_sources_to_message(self, message_id: str, sources: List[Source]) -> None:
         """Ajoute des sources à un message.
         
         Args:
@@ -47,19 +47,19 @@ class ChatSourceManager(IChatSourceManager):
                 StateManager.update_chat_state(chat_state)
                 break
     
-    def format_sources(self, search_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def format_sources(self, search_results: List[Dict[str, Any]]) -> List[Source]:
         """Formate les résultats de recherche en sources.
         
         Args:
-            search_results: Résultats de recherche
+            search_results: Résultats de recherche bruts
             
         Returns:
-            List[Dict[str, Any]]: Sources formatées
+            Sources formatées avec les informations complètes
         """
-        formatted_sources = []
+        formatted_sources: List[Source] = []
         for result in search_results:
-            kb_id = result.get("kb_id")
-            doc_id = result.get("doc_id")
+            kb_id = result.get("kb_id", "")
+            doc_id = result.get("doc_id", "")
             
             # Récupérer les informations de la base et du document
             kb = self.kb_manager.get_knowledge_base(kb_id)
@@ -73,15 +73,69 @@ class ChatSourceManager(IChatSourceManager):
             if not doc:
                 continue
                 
-            # Formater la source
-            source = {
+            # Formater la source avec le type Source
+            source = cast(Source, {
                 "title": doc.get("title", doc_id),
                 "kb_id": kb_id,
                 "doc_id": doc_id,
                 "page_numbers": result.get("page_numbers", []),
                 "search_mode": result.get("search_mode", "semantic"),
-                "score": result.get("score", 0)
-            }
+                "score": float(result.get("score", 0)),
+                "content": result.get("content", ""),
+                "excerpt": result.get("text", "")
+            })
             formatted_sources.append(source)
             
         return formatted_sources
+    
+    def format_references(self, references: List[DocumentReference]) -> List[Source]:
+        """Formate les références de documents pour l'affichage.
+        
+        Args:
+            references: Liste des références de documents
+            
+        Returns:
+            Liste des sources formatées pour l'affichage
+        """
+        sources: List[Source] = []
+        for ref in references:
+            # Récupérer les informations du document
+            docs = self.kb_manager.list_documents(ref.kb_id)
+            doc_info = next(
+                (doc for doc in docs if doc["doc_id"] == ref.doc_id),
+                None
+            )
+            
+            if not doc_info:
+                continue
+                
+            # Formater la source
+            source = cast(Source, {
+                "title": doc_info.get("title", ref.doc_id),
+                "kb_id": ref.kb_id,
+                "doc_id": ref.doc_id,
+                "page_numbers": ref.page_numbers,
+                "search_mode": ref.search_mode,
+                "score": ref.relevance_score,
+                "content": ref.text,
+                "excerpt": ref.text[:200] + "..." if len(ref.text) > 200 else ref.text
+            })
+            sources.append(source)
+            
+        return sources
+    
+    def _get_relevance_color(self, score: float) -> str:
+        """Détermine la couleur d'affichage en fonction du score.
+        
+        Args:
+            score: Score de pertinence
+            
+        Returns:
+            Emoji de couleur correspondant au score
+        """
+        if score >= 0.8:
+            return "🟢"  # Très pertinent
+        elif score >= 0.6:
+            return "🟡"  # Moyennement pertinent
+        else:
+            return "🔴"  # Peu pertinent
