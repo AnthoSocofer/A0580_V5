@@ -51,8 +51,9 @@ class ChatUI:
             
             # Affichage des sources
             if message.get("sources"):
-                self._render_sources(cast(List[Source], message["sources"]))
-                self._render_source_summary(cast(List[Source], message["sources"]))
+                sources = cast(List[Source], message["sources"])
+                self._render_source_summary(sources)
+                self._render_sources(sources)
     
     def _get_relevance_color(self, score: float) -> str:
         """Détermine la couleur d'affichage en fonction du score.
@@ -69,6 +70,31 @@ class ChatUI:
             return "🟡"  # Moyennement pertinent
         else:
             return "🔴"  # Peu pertinent
+    
+    def _render_source_summary(self, sources: List[Source]) -> None:
+        """Affiche un résumé des sources principales.
+        
+        Args:
+            sources: Liste des sources à résumer
+        """
+        # Ne montrer que les sources les plus pertinentes
+        relevant_sources = [s for s in sources if s["score"] >= 0.5][:3]
+        
+        if relevant_sources:
+            self.ui_renderer.render_markdown("---")
+            self.ui_renderer.render_markdown("**Sources principales utilisées:**")
+            
+            for idx, source in enumerate(relevant_sources, 1):
+                if source.get("page_numbers"):
+                    start, end = source["page_numbers"][:2]
+                    pages = f"p. {start}-{end}"
+                else:
+                    pages = ""
+                    
+                self.ui_renderer.render_markdown(
+                    f"- 📄 **Source {idx}** ({source['score']:.2f}): "
+                    f"{source['title']} ({pages})"
+                )
     
     def _render_sources(self, sources: List[Source]) -> None:
         """Affiche les sources dans un expander.
@@ -112,31 +138,6 @@ class ChatUI:
                     
                     self.ui_renderer.render_divider()
     
-    def _render_source_summary(self, sources: List[Source]) -> None:
-        """Affiche un résumé des sources principales.
-        
-        Args:
-            sources: Liste des sources à résumer
-        """
-        # Ne montrer que les sources les plus pertinentes
-        relevant_sources = [s for s in sources if s["score"] >= 0.5][:3]
-        
-        if relevant_sources:
-            self.ui_renderer.render_markdown("---")
-            self.ui_renderer.render_markdown("**Sources principales utilisées:**")
-            
-            for idx, source in enumerate(relevant_sources, 1):
-                if source.get("page_numbers"):
-                    start, end = source["page_numbers"][:2]
-                    pages = f"p. {start}-{end}"
-                else:
-                    pages = ""
-                    
-                self.ui_renderer.render_markdown(
-                    f"- 📄 **Source {idx}** ({source['score']:.2f}): "
-                    f"{source['title']} ({pages})"
-                )
-    
     def _handle_user_input(self, user_input: str) -> None:
         """Gère l'entrée utilisateur.
         
@@ -155,5 +156,5 @@ class ChatUI:
         with self.ui_renderer.chat_message("assistant"):
             self.ui_renderer.render_markdown(response)
             if sources:
-                self._render_sources(sources)
                 self._render_source_summary(sources)
+                self._render_sources(sources)
