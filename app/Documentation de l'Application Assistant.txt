@@ -1,0 +1,73 @@
+Documentation de l'Application Assistant Documentaire
+1. Vue d'ensemble
+L'Assistant Documentaire est une application web construite avec Streamlit qui permet de gérer et d'interagir avec des bases de connaissances documentaires. L'application suit une architecture modulaire avec une séparation claire entre l'interface utilisateur, la logique métier et les composants core.
+
+2. Structure du Projet
+Code
+CopyInsert
+app/
+├── main.py              # Point d'entrée de l'application
+├── src/
+│   ├── config/         # Configuration de l'application
+│   ├── core/           # Composants core et logique métier principale
+│   ├── external/       # Intégrations externes
+│   └── ui/             # Composants de l'interface utilisateur
+└── tests/              # Tests unitaires et d'intégration
+3. Composants Principaux
+3.1 Core Components (src/core/)
+KnowledgeBasesManager (knowledge_bases_manager.py)
+Gère les bases de connaissances
+Responsable du stockage et de la récupération des documents
+StateManager (state_manager.py)
+Gère l'état global de l'application
+Maintient la cohérence entre les différents composants
+SearchEngine (search_engine.py)
+Implémente la logique de recherche dans les bases de connaissances
+3.2 Interface Utilisateur (src/ui/)
+L'interface utilisateur est divisée en plusieurs composants :
+
+Chat
+ChatUI: Interface de conversation
+ChatLogic: Logique de gestion des conversations
+ChatResponseGenerator: Génération des réponses
+ChatSearchManager: Gestion des recherches
+Filtres
+KBFilterUI: Filtrage des bases de connaissances
+DocumentFilterUI: Filtrage des documents
+Gestion des Bases de Connaissances
+KBManagerUI: Interface de gestion des bases
+DocumentManagerUI: Interface de gestion des documents
+3.3 Configuration (src/config/)
+La configuration de l'application est chargée depuis des fichiers de configuration et des variables d'environnement.
+
+4. Architecture
+L'application suit une architecture en couches :
+
+Couche Présentation (ui/components/*/view/)
+Composants Streamlit pour l'interface utilisateur
+Renderers spécifiques pour chaque type de composant
+Couche Logique Métier (ui/components/*/business/)
+Logique spécifique à chaque composant
+Gestion des états et des interactions
+Couche Core (core/)
+Services fondamentaux
+Gestion des données et des opérations principales
+5. Flux de Données
+L'utilisateur interagit avec les composants UI
+Les interactions sont traitées par la logique métier correspondante
+Les opérations core sont exécutées via le KnowledgeBasesManager
+Les résultats sont affichés via les renderers Streamlit
+6. Points d'Extension
+L'application est conçue pour être extensible :
+
+Nouveaux types de filtres dans ui/components/filters/
+Intégrations externes dans external/
+Nouveaux composants UI dans ui/components/
+7. Démarrage
+L'application est lancée via main.py qui :
+
+Charge la configuration
+Initialise les composants core
+Configure l'interface Streamlit
+Instancie et connecte tous les composants
+Cette documentation fournit une vue d'ensemble de l'architecture et des composants principaux de l'Assistant Documentaire. Pour plus de détails sur des composants spécifiques, consultez la documentation inline dans les fichiers source correspondants.

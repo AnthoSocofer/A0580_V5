@@ -68,7 +68,7 @@ class KBManagerUI:
                             self.ui_renderer.render_markdown(f" {doc.filename}")
                         with col2:
                             if self.ui_renderer.render_button(
-                                "",
+                                "🗑️",
                                 key=f"delete_doc_button_{kb.id}_{doc.filename}"
                             ):
                                 if self.kb_logic.delete_document(kb.id, doc.filename):

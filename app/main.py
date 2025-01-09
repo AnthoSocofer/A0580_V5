@@ -133,10 +133,6 @@ class App:
             
             with tab_kb:
                 self.kb_ui.render()
-                # Afficher les documents de la base sélectionnée
-                selected_kbs = self.kb_filter_logic.get_selected_kbs()
-                if selected_kbs:
-                    self.doc_ui.render(selected_kbs[0])
 
     def run(self):
         """Lance l'application."""

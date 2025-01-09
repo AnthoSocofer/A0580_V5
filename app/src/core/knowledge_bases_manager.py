@@ -14,7 +14,8 @@ from src.config import config
 from dsrag.embedding import OpenAIEmbedding
 from dsrag.reranker import CohereReranker
 from pathlib import Path
-
+from dsrag.database.vector.chroma_db import ChromaDB
+from dsrag.database.chunk.sqlite_db import SQLiteDB
 class KnowledgeBasesManager:
     """Gestionnaire de bases de connaissances."""
     
@@ -179,10 +180,6 @@ class KnowledgeBasesManager:
         try:
             self.logger.info(f"Création de la base {kb_id} dans {self.storage_directory}")
             
-            # Vérifier que les répertoires existent
-            os.makedirs(self.storage_directory, exist_ok=True)
-            os.makedirs(self.metadata_dir, exist_ok=True)
-            
             # Vérifier si la base existe déjà
             if kb_id in self._knowledge_bases:
                 if not exists_ok:
@@ -211,6 +208,8 @@ class KnowledgeBasesManager:
                 title=title,
                 description=description,
                 language=language,
+                vector_db=ChromaDB(kb_id, storage_directory=self.storage_directory),
+                chunk_db=SQLiteDB(kb_id, storage_directory=self.storage_directory),
                 **kwargs
             )
             

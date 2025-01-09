@@ -55,8 +55,8 @@ class TestChatSourceManager:
 
         # Configuration du mock kb_manager
         mock_docs = [
-            {"doc_id": "doc1", "title": "Document 1"},
-            {"doc_id": "doc2", "title": "Document 2"}
+            {"doc_id": "doc1", "title": "Document 1", "base": "normes"},
+            {"doc_id": "doc2", "title": "Document 2", "base": "normes"}
         ]
         source_manager.kb_manager.get_documents.return_value = mock_docs
 
@@ -70,7 +70,8 @@ class TestChatSourceManager:
         # Vérification du premier document formaté
         first_source = formatted_sources[0]
         assert first_source["title"] == "Document 1"
-        assert first_source["excerpt"] == "Test content 1"
+        assert first_source["base"] == "normes"
+        assert first_source["content"] == "Test content 1"
         assert first_source["score"] == 0.9
         assert first_source["pages"] == "Pages 1-2"
 

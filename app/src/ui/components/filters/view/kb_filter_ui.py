@@ -33,3 +33,5 @@ class KBFilterUI:
         # Mettre à jour les bases sélectionnées
         if selected_options is not None:
             self.filter_logic.update_selected_kbs(selected_options)
+            
+        # Note: La section Document a été supprimée car elle est déjà disponible dans l'onglet "Bases"

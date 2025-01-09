@@ -41,15 +41,21 @@ class ChatUI:
             
             # Affichage des sources
             if message.get("sources"):
-                with self.ui_renderer.expander("📚 Sources", expanded=False):
-                    for source in message["sources"]:
-                        self.ui_renderer.render_markdown(f"**Document**: {source['title']}")
-                        if source.get("score"):
-                            self.ui_renderer.render_markdown(
-                                f"*Score de pertinence*: {source['score']:.2f}"
-                            )
+                with self.ui_renderer.expander("📚 Voir toutes les sources en détail", expanded=False):
+                    for idx, source in enumerate(message["sources"], 1):
+                        self.ui_renderer.render_markdown(f"Source {idx}")
+                        self.ui_renderer.render_markdown(f"Document: {source['title']}")
+                        if source.get("base"):
+                            self.ui_renderer.render_markdown(f"Base: {source['base']}")
                         if source.get("pages"):
-                            self.ui_renderer.render_markdown(f"*{source['pages']}*")
+                            self.ui_renderer.render_markdown(f"Pages: {source['pages']}")
+                        if source.get("score"):
+                            self.ui_renderer.render_markdown(f"Score: {source['score']:.2f}")
+                        if source.get("context"):
+                            self.ui_renderer.render_markdown(f"Document context: {source['context']}")
+                        if source.get("content"):
+                            self.ui_renderer.render_markdown(source['content'])
+                        self.ui_renderer.render_markdown("---")
     
     def _handle_user_input(self, user_input: str) -> None:
         """Gère l'entrée utilisateur."""
@@ -65,12 +71,18 @@ class ChatUI:
         with self.ui_renderer.chat_message("assistant"):
             self.ui_renderer.render_markdown(response)
             if sources:
-                with self.ui_renderer.expander("📚 Sources", expanded=False):
-                    for source in sources:
-                        self.ui_renderer.render_markdown(f"**Document**: {source['title']}")
-                        if source.get("score"):
-                            self.ui_renderer.render_markdown(
-                                f"*Score de pertinence*: {source['score']:.2f}"
-                            )
+                with self.ui_renderer.expander("📚 Voir toutes les sources en détail", expanded=False):
+                    for idx, source in enumerate(sources, 1):
+                        self.ui_renderer.render_markdown(f"Source {idx}")
+                        self.ui_renderer.render_markdown(f"Document: {source['title']}")
+                        if source.get("base"):
+                            self.ui_renderer.render_markdown(f"Base: {source['base']}")
                         if source.get("pages"):
-                            self.ui_renderer.render_markdown(f"*{source['pages']}*")
+                            self.ui_renderer.render_markdown(f"Pages: {source['pages']}")
+                        if source.get("score"):
+                            self.ui_renderer.render_markdown(f"Score: {source['score']:.2f}")
+                        if source.get("context"):
+                            self.ui_renderer.render_markdown(f"Document context: {source['context']}")
+                        if source.get("content"):
+                            self.ui_renderer.render_markdown(source['content'])
+                        self.ui_renderer.render_markdown("---")
