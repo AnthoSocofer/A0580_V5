@@ -1,5 +1,32 @@
-/.env
-/.venv
+# Fichiers compilés Python
+*.pyc
+*.pyo
+__pycache__/
+*/__pycache__
+*__pycache__
+
+# Environnements virtuels
+venv/
+env/
+.venv
+.env
+
+# Fichiers de build
+build/
+dist/
+*.egg-info/
+
+# Fichiers de logs
+*.log
+
+# Fichiers de configuration IDE
+.vscode/
+.idea/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
 
 /agency_swarm
 app/data
+app/modules
