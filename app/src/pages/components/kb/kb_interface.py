@@ -31,7 +31,7 @@ class KBInterface:
         if knowledge_bases:
             for kb in knowledge_bases:
                 kb_id = kb['kb_id']
-                with st.expander(f"📚 {kb.get('title', kb_id)} ({kb_id})", expanded=kb_id == st.session_state.get('active_kb')):
+                with st.expander(f"📚 {kb.get('title', kb_id)}", expanded=kb_id == st.session_state.get('active_kb')):
                     # Description
                     if kb.get('description'):
                         st.markdown(f"**Description**: {kb['description']}")
