@@ -31,3 +31,6 @@ Thumbs.db
 app/data
 app/modules
 data
+
+# windsurf rules
+.windsurfrules
